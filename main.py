@@ -12,6 +12,7 @@ update_flip = False
 undo_flip = False
 redo_flip = False
 
+
 def main():
     from figure_updater import FigureUpdater
     from structure_definer import StructureDefiner
