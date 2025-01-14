@@ -22,6 +22,8 @@ class FigureUpdater:
         self.figure_loaded = False
         self.update_form_display = False
         self.form = None
+        self.undo_update = False
+        self.redo_update = False
         self.faces_updated = False
         self.point_cloud = None
         self.point_cloud_dict = {
@@ -57,7 +59,7 @@ class FigureUpdater:
         self.state = copy.deepcopy(self.state_default)
         self.state_load = copy.deepcopy(self.state_default)
         self.history = [copy.deepcopy(self.state_default)]
-        self.history_pos = 0
+        self.history_pos = -1
         self.figure_loaded = False
         self.figure_state_saves_default = {
             '000': None,
@@ -100,9 +102,6 @@ class FigureUpdater:
                faces
                ):
 
-        print(self.history_pos)
-        print(self.history)
-
         if self.figure_loaded:
             self.figure_loaded = False
 
@@ -114,7 +113,7 @@ class FigureUpdater:
                         {'lock-on': self.state_load.get('transforms').get('lock-on')})
                     self.update_form_display = True
 
-                self.state.update({'structure': {'faces': self.state_load.get('faces')}})
+                self.state.get('structure').update({'faces': self.state_load.get('structure').get('faces')})
                 self.update_structure_information()
                 self.update_manager(
                     category='transforms',
@@ -160,6 +159,14 @@ class FigureUpdater:
 
         elif self.form is not None:
 
+            # if self.history_pos < -1:
+            #     self.history = self.history[:self.history_pos + 1]
+            #     self.history_pos = -1
+            # if self.state != self.history[-1]:
+            #     self.history.append(copy.deepcopy(self.state))
+
+            self.state.get('transforms').update({'lock-on': transform_lock_on})
+
             if transform_lock_on:
 
                 if self.update_form_display:
@@ -171,13 +178,6 @@ class FigureUpdater:
                     self.state.update({'structure': {'faces': faces}})
                     self.point_cloud_update_faces(faces)
                     self.point_cloud_update()
-
-                if self.history_pos < -1:
-                    self.history = self.history[:self.history_pos + 1]
-                    self.history_pos = -1
-
-                if self.state != self.history[-1]:
-                    self.history.append(copy.deepcopy(self.state))
 
             else:
 
@@ -200,16 +200,16 @@ class FigureUpdater:
                     self.point_cloud_dict.update({'hologram': main.tf.hollow(self.form, 5)})
                     self.point_cloud_update_form()
 
-                if self.history_pos < -1:
-                    self.history = self.history[:self.history_pos + 1]
-                    self.history_pos = -1
-
-                if self.state != self.history[-1]:
-                    self.history.append(copy.deepcopy(self.state))
-
                 self.point_cloud_update()
 
             self.update_structure_information()
+
+            if not self.undo_update and not self.redo_update:
+                if self.history_pos < -1:
+                    self.history = self.history[:self.history_pos + 1]
+                    self.history_pos = -1
+                if self.state != self.history[-1]:
+                    self.history.append(copy.deepcopy(self.state))
 
     @main.tl.log_time
     def load(self, figure_key):
@@ -230,7 +230,7 @@ class FigureUpdater:
                 self.state_load.update({'structure': pickle.load(f)})
 
         self.history = [copy.deepcopy(self.state_default)]
-        self.history_pos = 0
+        self.history_pos = -1
         self.state = copy.deepcopy(self.state_default)
         self.figure_state_saves = self.figure_state_saves_default.copy()
         self.figure_state_saves.update({'000': self.form.copy()})
@@ -267,28 +267,39 @@ class FigureUpdater:
             self.state.get('structure').update({'faces': faces})
             self.point_cloud_dict.update({'faces': []})
 
-            if not transform_lock_on:
-                self.update_manager(
-                    category='transforms',
-                    terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
-                           ('theta', 'psi', 'phi'),
-                           'cutoff-level'),
-                    values=((x_scale, y_scale, z_scale, xyz_scale),
-                            (theta, psi, phi),
-                            cutoff_level),
-                    fns=('main.tf.cartesian_transform',
-                         'main.tf.rotate',
-                         'main.tf.cutoff')
-                )
-            else:
-                self.point_cloud_update_faces(faces)
+            self.undo_update = True
+            self.update(
+                transform_lock_on,
+                x_scale, y_scale, z_scale, xyz_scale,
+                theta, psi, phi,
+                cutoff_level,
+                structure_lock_on,
+                faces)
+            self.undo_update = False
 
-            self.point_cloud_update()
+            # if not transform_lock_on:
+            #     self.update_manager(
+            #         category='transforms',
+            #         terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
+            #                ('theta', 'psi', 'phi'),
+            #                'cutoff-level'),
+            #         values=((x_scale, y_scale, z_scale, xyz_scale),
+            #                 (theta, psi, phi),
+            #                 cutoff_level),
+            #         fns=('main.tf.cartesian_transform',
+            #              'main.tf.rotate',
+            #              'main.tf.cutoff')
+            #     )
+            # else:
+            #     self.point_cloud_update_faces(faces)
+            #
+            # self.point_cloud_update()
 
     @main.tl.log_time_spacer
     def redo(self):
         if self.history_pos < -1:
             self.history_pos += 1
+            transform_lock_on = self.history[self.history_pos].get('transforms').get('lock-on')
             x_scale = self.history[self.history_pos].get('transforms').get('x-scale')
             y_scale = self.history[self.history_pos].get('transforms').get('y-scale')
             z_scale = self.history[self.history_pos].get('transforms').get('z-scale')
@@ -297,40 +308,53 @@ class FigureUpdater:
             psi = self.history[self.history_pos].get('transforms').get('psi')
             phi = self.history[self.history_pos].get('transforms').get('phi')
             cutoff_level = self.history[self.history_pos].get('transforms').get('cutoff-level')
-            transform_lock_on = self.history[self.history_pos].get('transforms').get('lock-on')
+            structure_lock_on = self.history[self.history_pos].get('structure').get('lock-on')
             faces = self.history[self.history_pos].get('structure').get('faces')
             self.state.update({'structure': {'faces': faces}})
             self.point_cloud_dict.update({'faces': []})
-            if not transform_lock_on:
-                self.state.get('transforms').update({'lock-on': False})
-                self.update_manager(
-                    category='transforms',
-                    terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
-                           ('theta', 'psi', 'phi'),
-                           'cutoff-level'),
-                    values=((x_scale, y_scale, z_scale, xyz_scale),
-                            (theta, psi, phi),
-                            cutoff_level),
-                    fns=('main.tf.cartesian_transform',
-                         'main.tf.rotate',
-                         'main.tf.cutoff')
-                )
-            else:
-                self.state.get('transforms').update({'lock-on': True})
-                self.update_manager(
-                    category='transforms',
-                    terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
-                           ('theta', 'psi', 'phi'),
-                           'cutoff-level'),
-                    values=((x_scale, y_scale, z_scale, xyz_scale),
-                            (theta, psi, phi),
-                            cutoff_level),
-                    fns=('main.tf.cartesian_transform',
-                         'main.tf.rotate',
-                         'main.tf.cutoff')
-                )
-                self.point_cloud_update_faces(faces)
-            self.point_cloud_update()
+
+            print('transform lock on: ' + str(transform_lock_on))
+
+            self.redo_update = True
+            self.update(
+                transform_lock_on,
+                x_scale, y_scale, z_scale, xyz_scale,
+                theta, psi, phi,
+                cutoff_level,
+                structure_lock_on,
+                faces)
+            self.redo_update = False
+
+            # if not transform_lock_on:
+            #     self.state.get('transforms').update({'lock-on': False})
+            #     self.update_manager(
+            #         category='transforms',
+            #         terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
+            #                ('theta', 'psi', 'phi'),
+            #                'cutoff-level'),
+            #         values=((x_scale, y_scale, z_scale, xyz_scale),
+            #                 (theta, psi, phi),
+            #                 cutoff_level),
+            #         fns=('main.tf.cartesian_transform',
+            #              'main.tf.rotate',
+            #              'main.tf.cutoff')
+            #     )
+            # else:
+            #     self.state.get('transforms').update({'lock-on': True})
+            #     self.update_manager(
+            #         category='transforms',
+            #         terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
+            #                ('theta', 'psi', 'phi'),
+            #                'cutoff-level'),
+            #         values=((x_scale, y_scale, z_scale, xyz_scale),
+            #                 (theta, psi, phi),
+            #                 cutoff_level),
+            #         fns=('main.tf.cartesian_transform',
+            #              'main.tf.rotate',
+            #              'main.tf.cutoff')
+            #     )
+            #     self.point_cloud_update_faces(faces)
+            # self.point_cloud_update()
 
     @main.tl.log_time
     def update_manager(self, category, terms, values, fns, level=0, changes=None):
@@ -533,48 +557,47 @@ class FigureUpdater:
             '''
         )]
 
-        if self.state.get('structure').get('faces') is not None:
-            for key0, value in self.state.get('structure').get('faces').items():
-                if self.state.get('structure').get('faces').get(key0).get('initialised_plane'):
-                    string = ''.join('html.Label(children=["' + key1 + '"], ' +
-                                     f'style=\u007b"color": "{self.state.get("structure").get("faces").get(key1).get("color")}"\u007d),' +
-                                     'html.Br(),'
-                                     for key1 in self.state.get('structure').get('faces').get(key0).get('adjacent_faces'))
-                    if string == '':
-                        string = 'html.Label("N/A")'
-                    if self.state.get('structure').get('faces').get(key0).get('size') is None:
-                        size = 'N/A'
-                    else:
-                        size = self.state.get('structure').get('faces').get(key0).get('size')
-                    self.structure_information.append(
-                        eval(
-                            f'''\
-                            html.Tr(
-                                children=[
-                                    html.Td(html.Label("{key0}", style=\u007b"color": "{value.get('color')}"\u007d),
-                                        style=\u007b"padding": "4px 15px 4px 15px",
-                                                    "border": "1px dotted black",
-                                                    "border-collapse": "collapse"\u007d),
-                                    html.Td(
-                                        html.Label(
-                                            children=[
-                            {string}
-                                            ],
-                                        ),
-                                        style=\u007b"padding": "4px 15px 4px 15px",
-                                                    "border": "1px dotted black",
-                                                    "border-collapse": "collapse"\u007d
+        for key0, value in self.state.get('structure').get('faces').items():
+            if self.state.get('structure').get('faces').get(key0).get('initialised_plane'):
+                string = ''.join('html.Label(children=["' + key1 + '"], ' +
+                                 f'style=\u007b"color": "{self.state.get("structure").get("faces").get(key1).get("color")}"\u007d),' +
+                                 'html.Br(),'
+                                 for key1 in self.state.get('structure').get('faces').get(key0).get('adjacent_faces'))
+                if string == '':
+                    string = 'html.Label("N/A")'
+                if self.state.get('structure').get('faces').get(key0).get('size') is None:
+                    size = 'N/A'
+                else:
+                    size = self.state.get('structure').get('faces').get(key0).get('size')
+                self.structure_information.append(
+                    eval(
+                        f'''\
+                        html.Tr(
+                            children=[
+                                html.Td(html.Label("{key0}", style=\u007b"color": "{value.get('color')}"\u007d),
+                                    style=\u007b"padding": "4px 15px 4px 15px",
+                                                "border": "1px dotted black",
+                                                "border-collapse": "collapse"\u007d),
+                                html.Td(
+                                    html.Label(
+                                        children=[
+                        {string}
+                                        ],
                                     ),
-                                    html.Td(html.Label("{size}"),
-                                        style=\u007b"padding": "4px 15px 4px 15px",
-                                                    "border": "1px dotted black",
-                                                    "border-collapse": "collapse"\u007d
-                                    )
-                                ],
-                            )\
-                            '''
-                        )
+                                    style=\u007b"padding": "4px 15px 4px 15px",
+                                                "border": "1px dotted black",
+                                                "border-collapse": "collapse"\u007d
+                                ),
+                                html.Td(html.Label("{size}"),
+                                    style=\u007b"padding": "4px 15px 4px 15px",
+                                                "border": "1px dotted black",
+                                                "border-collapse": "collapse"\u007d
+                                )
+                            ],
+                        )\
+                        '''
                     )
+                )
 
     @staticmethod
     def _time_log_init():

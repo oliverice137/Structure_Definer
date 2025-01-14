@@ -1,6 +1,9 @@
 # ec0rypt by Oliver Rice
 
 
+import copy
+
+
 polyhedralise_flip = False
 face_add_flip = False
 face_delete_flip = False
@@ -884,13 +887,12 @@ def main():
                     if transform_lock_on:
                         figure_key = None
 
-                        if not fs.state.get('transforms').get('lock-on'):
-                            fs.state.get('transforms').update({'lock-on': True})
-                            fs.update_form_display = True
-
-                            if fs.form is not None:
-                                sd.faces = {}
-                                fs.state.update({'structure': {'faces': {}}})
+                        # if not fs.state.get('transforms').get('lock-on'):
+                        #     fs.update_form_display = True
+                        #
+                        #     if fs.form is not None:
+                        #         sd.faces = {}
+                        #         fs.state.update({'structure': {'faces': {}}})
 
                         if sd.face_add:
                             sd.face_add = False
@@ -905,13 +907,12 @@ def main():
 
                     else:
 
-                        if fs.state.get('transforms').get('lock-on'):
-                            fs.state.get('transforms').update({'lock-on': False})
-                            fs.update_form_display = True
+                        # if fs.state.get('transforms').get('lock-on'):
+                        #     fs.update_form_display = True
 
-                        sd.shape = None
-                        sd.faces = {}
-                        fs.state.update({'structure': {'faces': {}}})
+                        # sd.shape = None
+                        # sd.faces = {}
+                        # fs.state.update({'structure': {'faces': {}}})
 
                         if figure_key is not None:
                             fs.load(figure_key)
@@ -930,10 +931,16 @@ def main():
                         structure_lock_on,
                         sd.faces,
                     )
-                    sd.face_add = False
 
-                    if fs.state.get('transforms').get('lock-on') and fs.form is not None:
+                    sd.face_add = False
+                    if fs.form is not None and fs.state.get('transforms').get('lock-on'):
                         sd.shape = fs.form.shape
+
+                    # if fs.state != fs.history[-1]:
+                    #     fs.history.append(copy.deepcopy(fs.state))
+
+                print(fs.history_pos)
+                print(fs.history.__len__())
 
             # --------------------------------------------------------------------------------------------- set ui state
             if True:
