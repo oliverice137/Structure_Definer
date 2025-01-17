@@ -28,7 +28,8 @@ def main():
     sd = StructureDefiner()
     se = Segmentation()
 
-    point_cloud = fs.point_cloud
+    transform_point_cloud = fs.transform_point_cloud
+    structure_point_cloud = fs.structure_point_cloud
 
     app = Dash(__name__)
 
@@ -113,14 +114,14 @@ def main():
 
                     # -------------------------------------------------------------------------------------- point cloud
                     dcc.Graph(
-                        figure=point_cloud,
-                        id='point-cloud',
+                        figure=transform_point_cloud,
+                        id='transform-point-cloud',
                         style={
                             'title': 'Point_Cloud',
                             'width': '100%',
                             'height': '60vh',
                             'background-color': '#EBEBEB'
-                        },
+                        }
                     ),
 
                     # ---------------------------------------------------- point cloud display settings collapse control
@@ -131,7 +132,7 @@ def main():
                                 [],
                                 className='checklist',
                                 labelClassName='checklist_label',
-                                id='toggle-point-cloud-display-settings'
+                                id='toggle-transform-point-cloud-display-settings'
                             )
                         ],
                         className='section_gray_1'
@@ -162,7 +163,7 @@ def main():
                         children=[
                             html.Div(className='h12 gray_1')
                         ],
-                        id='point-cloud-display-settings-body',
+                        id='transform-point-cloud-display-settings-body',
                     ),
 
                     # -------------------------------------------------------------------------- cartesian scale sliders
@@ -331,6 +332,18 @@ def main():
 
             html.Div(
                 children=[
+
+                    # -------------------------------------------------------------------------------------- point cloud
+                    dcc.Graph(
+                        figure=structure_point_cloud,
+                        id='structure-point-cloud',
+                        style={
+                            'title': 'Point_Cloud',
+                            'width': '100%',
+                            'height': '60vh',
+                            'background-color': '#EBEBEB'
+                        }
+                    ),
 
                     # --------------------------------------------------------------------- information collapse control
                     html.Div(
@@ -635,7 +648,7 @@ def main():
     # ///////////////////////////////////////////////////////////////////////////////////////////////// primary callback
     if True:
         @callback(
-            Output('point-cloud-display-settings-body', 'style'),
+            Output('transform-point-cloud-display-settings-body', 'style'),
             Output('mesh-body', 'style'),
             Output('mesh-display-settings-body', 'style'),
             Output('transform-controls-body', 'style'),
@@ -647,8 +660,8 @@ def main():
 
             Output('structure-information-faces', 'children'),
 
-            Output('point-cloud', 'figure'),
-            Output('point-cloud', 'clickData'),
+            Output('transform-point-cloud', 'figure'),
+            Output('transform-point-cloud', 'clickData'),
             Output('transform-lock', 'on'),
             Output('x-slider', 'value'),
             Output('y-slider', 'value'),
@@ -660,7 +673,7 @@ def main():
             Output('cutoff-level-slider', 'value'),
             Output('loaded-figure', 'contents'),
 
-            Output('toggle-point-cloud-display-settings', 'options', allow_duplicate=True),
+            Output('toggle-transform-point-cloud-display-settings', 'options', allow_duplicate=True),
             Output('toggle-mesh', 'options', allow_duplicate=True),
             Output('toggle-mesh-display-settings', 'options', allow_duplicate=True),
             Output('toggle-transform-controls', 'options', allow_duplicate=True),
@@ -691,7 +704,7 @@ def main():
             Output('undo-button', 'disabled', allow_duplicate=True),
             Output('redo-button', 'disabled', allow_duplicate=True),
 
-            Output('point-cloud', 'clickData', allow_duplicate=True),
+            Output('transform-point-cloud', 'clickData', allow_duplicate=True),
 
             State('transform-lock', 'on'),
             State('x-slider', 'value'),
@@ -706,7 +719,7 @@ def main():
             State('segment-width', 'value'),
             State('loaded-figure', 'contents'),
 
-            Input('toggle-point-cloud-display-settings', 'value'),
+            Input('toggle-transform-point-cloud-display-settings', 'value'),
             Input('toggle-mesh', 'value'),
             Input('toggle-mesh-display-settings', 'value'),
             Input('toggle-transform-controls', 'value'),
@@ -716,7 +729,7 @@ def main():
             Input('toggle-load-save', 'value'),
             Input('toggle-presets', 'value'),
 
-            Input('point-cloud', 'clickData'),
+            Input('transform-point-cloud', 'clickData'),
 
             Input('polyhedralise-bus', 'children'),
             Input('face-add-bus', 'children'),
@@ -742,7 +755,7 @@ def main():
 
                 figure_key,
 
-                toggle_point_cloud_display_settings,
+                toggle_transform_point_cloud_display_settings,
                 toggle_mesh,
                 toggle_mesh_display_settings,
                 toggle_transform_controls,
@@ -761,10 +774,10 @@ def main():
 
             # ------------------------------------------------------------------------------------------ display toggles
             if True:
-                if toggle_point_cloud_display_settings == ['show']:
-                    point_cloud_display_settings_style = {'display': ''}
+                if toggle_transform_point_cloud_display_settings == ['show']:
+                    transform_point_cloud_display_settings_style = {'display': ''}
                 else:
-                    point_cloud_display_settings_style = {'display': 'none'}
+                    transform_point_cloud_display_settings_style = {'display': 'none'}
                 if toggle_mesh == ['show']:
                     mesh_style = {'display': ''}
                 else:
@@ -817,8 +830,8 @@ def main():
                 global polyhedralise_flip
                 if polyhedralise_flip is not polyhedralise_bus:
                     polyhedralise_flip = polyhedralise_bus
-                    # sd.polyhedralise(fs.point_cloud_dict.get('hologram'))
-                    sd.form_sample(fs.point_cloud_dict.get('hologram'))
+                    # sd.polyhedralise(fs.transform_point_cloud_dict.get('hologram'))
+                    sd.form_sample(fs.transform_point_cloud_dict.get('hologram'))
 
                 global face_add_flip
                 if face_add_flip is not face_add_bus:
@@ -887,13 +900,6 @@ def main():
                     if transform_lock_on:
                         figure_key = None
 
-                        # if not fs.state.get('transforms').get('lock-on'):
-                        #     fs.update_form_display = True
-                        #
-                        #     if fs.form is not None:
-                        #         sd.faces = {}
-                        #         fs.state.update({'structure': {'faces': {}}})
-
                         if sd.face_add:
                             sd.face_add = False
                             sd.face_new = True
@@ -906,14 +912,6 @@ def main():
                             sd.face_delete = False
 
                     else:
-
-                        # if fs.state.get('transforms').get('lock-on'):
-                        #     fs.update_form_display = True
-
-                        # sd.shape = None
-                        # sd.faces = {}
-                        # fs.state.update({'structure': {'faces': {}}})
-
                         if figure_key is not None:
                             fs.load(figure_key)
                             sd.shape = fs.form.shape
@@ -935,12 +933,6 @@ def main():
                     sd.face_add = False
                     if fs.form is not None and fs.state.get('transforms').get('lock-on'):
                         sd.shape = fs.form.shape
-
-                    # if fs.state != fs.history[-1]:
-                    #     fs.history.append(copy.deepcopy(fs.state))
-
-                print(fs.history_pos)
-                print(fs.history.__len__())
 
             # --------------------------------------------------------------------------------------------- set ui state
             if True:
@@ -975,12 +967,14 @@ def main():
                 save_disabled = False
                 presets_disabled = False
                 update_disabled = False
-                undo_redo_disabled = False
+                undo_disabled = False
+                redo_disabled = False
 
                 if fs.form is None:
                     transform_lock_disabled = True
                     structure_lock_disabled = True
-                    undo_redo_disabled = True
+                    undo_disabled = True
+                    redo_disabled =True
                     transforms_controls_disabled = True
                     structure_controls_disabled = True
                     save_disabled = True
@@ -1005,10 +999,18 @@ def main():
                     load_disabled = True
                     save_disabled = True
                     presets_disabled = True
-                    undo_redo_disabled = True
+                    undo_disabled = True
+                    redo_disabled = True
+
+                if fs.history_pos == -1:
+                    redo_disabled = True
+                    if len(fs.history) == 1:
+                        undo_disabled = True
+                elif fs.history_pos == -len(fs.history):
+                    undo_disabled = True
 
             return \
-                (point_cloud_display_settings_style,
+                (transform_point_cloud_display_settings_style,
                  mesh_style,
                  mesh_display_settings_style,
                  transform_controls_style,
@@ -1017,7 +1019,7 @@ def main():
                  load_save_style,
                  presets_style,
                  fs.structure_information,
-                 fs.point_cloud, clickdata,
+                 fs.transform_point_cloud, clickdata,
                  fs.state.get('transforms').get('lock-on'),
                  x_scale, y_scale, z_scale, scale_multiplier,
                  theta, psi, phi,
@@ -1040,13 +1042,13 @@ def main():
                  structure_controls_disabled, structure_controls_disabled, structure_controls_disabled,
                  load_disabled, save_disabled,
                  presets_disabled, presets_disabled, presets_disabled,
-                 update_disabled, undo_redo_disabled, undo_redo_disabled,
+                 update_disabled, undo_disabled, redo_disabled,
                  None)
 
     # /////////////////////////////////////////////////////////////////////////////////////////////// secondary callback
     if True:
         @callback(
-            Output('toggle-point-cloud-display-settings', 'options'),
+            Output('toggle-transform-point-cloud-display-settings', 'options'),
             Output('toggle-mesh', 'options'),
             Output('toggle-mesh-display-settings', 'options'),
             Output('toggle-transform-controls', 'options'),
@@ -1149,7 +1151,7 @@ def main():
             # --------------------------------------------------------------------------------------- disable all inputs
             if True:
                 if disable_inputs:
-                    toggle_point_cloud_display_settings_disabled = True
+                    toggle_transform_point_cloud_display_settings_disabled = True
                     toggle_mesh_disabled = True
                     toggle_mesh_display_settings_disabled = True
                     toggle_transform_controls_disabled = True
@@ -1170,7 +1172,7 @@ def main():
                     undo_disabled = True
                     redo_disabled = True
                 else:
-                    toggle_point_cloud_display_settings_disabled = False
+                    toggle_transform_point_cloud_display_settings_disabled = False
                     toggle_mesh_disabled = False
                     toggle_mesh_display_settings_disabled = False
                     toggle_transform_controls_disabled = False
@@ -1192,7 +1194,7 @@ def main():
                     redo_disabled = False
 
             return \
-                ([{'label': 'Display Settings', 'value': 'show','disabled': toggle_point_cloud_display_settings_disabled}],
+                ([{'label': 'Display Settings', 'value': 'show','disabled': toggle_transform_point_cloud_display_settings_disabled}],
                  [{'label': 'Mesh', 'value': 'show', 'disabled': toggle_mesh_disabled}],
                  [{'label': 'Display Settings', 'value': 'show','disabled': toggle_mesh_display_settings_disabled}],
                  [{'label': 'Transform Controls', 'value': 'show','disabled': toggle_transform_controls_disabled}],

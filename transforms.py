@@ -24,7 +24,6 @@ class Transforms:
 
     @main.tl.log_time
     def value_translate(self, state):
-        print(state)
         def fn(n): return n * (1 - 1 / self.magnitude) + 1 if n < 0 else n * (self.magnitude - 1) + 1
         self.xyz_scale = fn(state.get('transforms').get('xyz-scale'))
         self.x_scale = fn(state.get('transforms').get('x-scale')) * self.xyz_scale

@@ -22,17 +22,24 @@ class FigureUpdater:
         self.figure_loaded = False
         self.update_form_display = False
         self.form = None
-        self.undo_update = False
-        self.redo_update = False
         self.faces_updated = False
-        self.point_cloud = None
-        self.point_cloud_dict = {
-            'form': [],
+        self.transform_point_cloud = None
+        self.transform_point_cloud_dict = {
+            'hologram': [],
+            'hologram-array': None,
+            'hologram-markers': (0.5, 'rgb(40,40,40)'),
             'faces': [],
-            'hologram': None,
-            'background-color': '#F7F7F7',
-            'form-markers': (0.5, 'rgb(40,40,40)'),
-            'face-markers': (2, 'full_spectrum')
+            'face-markers': (2, 'full_spectrum'),
+            'background-color': '#F7F7F7'
+        }
+        self.structure_point_cloud = None
+        self.structure_point_cloud_dict = {
+            'hologram': [],
+            'hologram-array': None,
+            'hologram-markers': (0.5, 'rgb(40,40,40)'),
+            'faces': [],
+            'face-markers': (2, 'full_spectrum'),
+            'background-color': '#F7F7F7'
         }
         self.mesh = None
         self.mesh_dict = {
@@ -90,7 +97,8 @@ class FigureUpdater:
                 )\
                 '''
             )]
-        self.point_cloud_update()
+        self.transform_point_cloud_update()
+        self.structure_point_cloud_update()
 
     @main.tl.log_time_spacer
     def update(self,
@@ -99,13 +107,17 @@ class FigureUpdater:
                theta, psi, phi,
                cutoff_level,
                structure_lock_on,
-               faces
+               faces,
+               history_update=False
                ):
 
+        # ----------------------------------------------------------------------------------------------- loading update
         if self.figure_loaded:
             self.figure_loaded = False
 
             if self.state_load != self.state_default:
+
+                print('!')
 
                 if (self.state.get('transforms').get('lock-on') !=
                         self.state_load.get('transforms').get('lock-on')):
@@ -133,37 +145,29 @@ class FigureUpdater:
                          'main.tf.cutoff')
                 )
 
+                self.state_load = copy.deepcopy(self.state_default)
+
                 if self.update_form_display:
                     self.update_form_display = False
 
                     if self.state.get('transforms').get('lock-on'):
-                        self.point_cloud_dict.update({'hologram': main.tf.hollow(self.form, 5)})
+                        self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
 
                     else:
-                        self.point_cloud_dict.update({'hologram': main.tf.hollow(self.form, 5)})
+                        self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
 
-                self.state_load = copy.deepcopy(self.state_default)
+                self.history.append(copy.deepcopy(self.state))
 
             else:
 
-                if self.state.get('transforms').get('lock-on'):
-                    self.point_cloud_dict.update({'hologram': main.tf.hollow(self.form, 5)})
+                self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
 
-                else:
-                    self.point_cloud_dict.update({'hologram': main.tf.hollow(self.form, 5)})
+            self.transform_point_cloud_update_faces(faces)
+            self.transform_point_cloud_update_form()
+            self.transform_point_cloud_update()
 
-            self.history.append(copy.deepcopy(self.state))
-            self.point_cloud_update_faces(faces)
-            self.point_cloud_update_form()
-            self.point_cloud_update()
-
+        # ---------------------------------------------------------------------------------------------- standard update
         elif self.form is not None:
-
-            # if self.history_pos < -1:
-            #     self.history = self.history[:self.history_pos + 1]
-            #     self.history_pos = -1
-            # if self.state != self.history[-1]:
-            #     self.history.append(copy.deepcopy(self.state))
 
             self.state.get('transforms').update({'lock-on': transform_lock_on})
 
@@ -171,13 +175,16 @@ class FigureUpdater:
 
                 if self.update_form_display:
                     self.update_form_display = False
-                    self.point_cloud_dict.update({'hologram': main.tf.hollow(self.form, 5)})
+                    self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
 
                 if self.faces_updated:
                     self.faces_updated = False
                     self.state.update({'structure': {'faces': faces}})
-                    self.point_cloud_update_faces(faces)
-                    self.point_cloud_update()
+                    self.transform_point_cloud_update_faces(faces)
+                    self.transform_point_cloud_update()
+                elif history_update:
+                    self.transform_point_cloud_update_faces(faces)
+                    self.transform_point_cloud_update()
 
             else:
 
@@ -193,18 +200,18 @@ class FigureUpdater:
                          'main.tf.rotate',
                          'main.tf.cutoff')
                 )
-                self.point_cloud_dict.update({'faces': []})
+                self.transform_point_cloud_dict.update({'faces': []})
 
                 if self.update_form_display:
                     self.update_form_display = False
-                    self.point_cloud_dict.update({'hologram': main.tf.hollow(self.form, 5)})
-                    self.point_cloud_update_form()
+                    self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
+                    self.transform_point_cloud_update_form()
 
-                self.point_cloud_update()
+                self.transform_point_cloud_update()
 
             self.update_structure_information()
 
-            if not self.undo_update and not self.redo_update:
+            if not history_update:
                 if self.history_pos < -1:
                     self.history = self.history[:self.history_pos + 1]
                     self.history_pos = -1
@@ -265,35 +272,17 @@ class FigureUpdater:
             self.state.get('transforms').update({'lock-on': transform_lock_on})
             self.state.get('structure').update({'lock-on': structure_lock_on})
             self.state.get('structure').update({'faces': faces})
-            self.point_cloud_dict.update({'faces': []})
+            self.transform_point_cloud_dict.update({'faces': []})
 
-            self.undo_update = True
             self.update(
                 transform_lock_on,
                 x_scale, y_scale, z_scale, xyz_scale,
                 theta, psi, phi,
                 cutoff_level,
                 structure_lock_on,
-                faces)
-            self.undo_update = False
-
-            # if not transform_lock_on:
-            #     self.update_manager(
-            #         category='transforms',
-            #         terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
-            #                ('theta', 'psi', 'phi'),
-            #                'cutoff-level'),
-            #         values=((x_scale, y_scale, z_scale, xyz_scale),
-            #                 (theta, psi, phi),
-            #                 cutoff_level),
-            #         fns=('main.tf.cartesian_transform',
-            #              'main.tf.rotate',
-            #              'main.tf.cutoff')
-            #     )
-            # else:
-            #     self.point_cloud_update_faces(faces)
-            #
-            # self.point_cloud_update()
+                faces,
+                history_update=True
+            )
 
     @main.tl.log_time_spacer
     def redo(self):
@@ -311,50 +300,17 @@ class FigureUpdater:
             structure_lock_on = self.history[self.history_pos].get('structure').get('lock-on')
             faces = self.history[self.history_pos].get('structure').get('faces')
             self.state.update({'structure': {'faces': faces}})
-            self.point_cloud_dict.update({'faces': []})
+            self.transform_point_cloud_dict.update({'faces': []})
 
-            print('transform lock on: ' + str(transform_lock_on))
-
-            self.redo_update = True
             self.update(
                 transform_lock_on,
                 x_scale, y_scale, z_scale, xyz_scale,
                 theta, psi, phi,
                 cutoff_level,
                 structure_lock_on,
-                faces)
-            self.redo_update = False
-
-            # if not transform_lock_on:
-            #     self.state.get('transforms').update({'lock-on': False})
-            #     self.update_manager(
-            #         category='transforms',
-            #         terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
-            #                ('theta', 'psi', 'phi'),
-            #                'cutoff-level'),
-            #         values=((x_scale, y_scale, z_scale, xyz_scale),
-            #                 (theta, psi, phi),
-            #                 cutoff_level),
-            #         fns=('main.tf.cartesian_transform',
-            #              'main.tf.rotate',
-            #              'main.tf.cutoff')
-            #     )
-            # else:
-            #     self.state.get('transforms').update({'lock-on': True})
-            #     self.update_manager(
-            #         category='transforms',
-            #         terms=(('x-scale', 'y-scale', 'z-scale', 'xyz-scale'),
-            #                ('theta', 'psi', 'phi'),
-            #                'cutoff-level'),
-            #         values=((x_scale, y_scale, z_scale, xyz_scale),
-            #                 (theta, psi, phi),
-            #                 cutoff_level),
-            #         fns=('main.tf.cartesian_transform',
-            #              'main.tf.rotate',
-            #              'main.tf.cutoff')
-            #     )
-            #     self.point_cloud_update_faces(faces)
-            # self.point_cloud_update()
+                faces,
+                history_update=True
+            )
 
     @main.tl.log_time
     def update_manager(self, category, terms, values, fns, level=0, changes=None):
@@ -497,19 +453,19 @@ class FigureUpdater:
 
     # possibly redundant
     @main.tl.log_time
-    def point_cloud_update_form(self):
-        if self.point_cloud_dict.get('hologram') is None:
+    def transform_point_cloud_update_form(self):
+        if self.transform_point_cloud_dict.get('hologram-array') is None:
             x = y = z = []
         else:
-            x, y, z = self.point_cloud_dict.get('hologram').nonzero()
+            x, y, z = self.transform_point_cloud_dict.get('hologram-array').nonzero()
         # noinspection PyTypeChecker
-        self.point_cloud_dict.update({'form': [go.Scatter3d(x=x, y=y, z=z, mode='markers', name='form',
-                                     marker=dict(size=self.point_cloud_dict.get('form-markers')[0],
-                                                 color=self.point_cloud_dict.get('form-markers')[1]))]})
+        self.transform_point_cloud_dict.update({'hologram': [go.Scatter3d(x=x, y=y, z=z, mode='markers', name='hologram',
+                                     marker=dict(size=self.transform_point_cloud_dict.get('hologram-markers')[0],
+                                                 color=self.transform_point_cloud_dict.get('hologram-markers')[1]))]})
 
     @main.tl.log_time
-    def point_cloud_update_faces(self, faces):
-        self.point_cloud_dict.update({'faces': []})
+    def transform_point_cloud_update_faces(self, faces):
+        self.transform_point_cloud_dict.update({'faces': []})
         planes = [value.get('plane_equation')
                   for value in faces.values() if value.get('initialised_plane')]
         for i, (key, value) in enumerate(faces.items()):
@@ -520,22 +476,35 @@ class FigureUpdater:
                     restrictions = None
                 x, y, z = self.construct_plane_hologram(
                     self.form.shape, plane, value.get('distance'), restrictions).nonzero()
-                self.point_cloud_dict.get('faces').append(
+                self.transform_point_cloud_dict.get('faces').append(
                     go.Scatter3d(x=x, y=y, z=z, mode='markers', name=key, marker=dict(
-                        size=self.point_cloud_dict.get('face-markers')[0], color=value.get('color'))))
+                        size=self.transform_point_cloud_dict.get('face-markers')[0], color=value.get('color'))))
 
     @main.tl.log_time
-    def point_cloud_update(self):
+    def transform_point_cloud_update(self):
         # noinspection PyTypeChecker
         layout = go.Layout(scene_aspectmode='data',
-                           paper_bgcolor=self.point_cloud_dict.get('background-color'),
+                           paper_bgcolor=self.transform_point_cloud_dict.get('background-color'),
                            showlegend=False)
         flat_lst = []
-        for elem in self.point_cloud_dict.get('form'):
+        for elem in self.transform_point_cloud_dict.get('hologram'):
             flat_lst.append(elem)
-        for elem in self.point_cloud_dict.get('faces'):
+        for elem in self.transform_point_cloud_dict.get('faces'):
             flat_lst.append(elem)
-        self.point_cloud = go.Figure(data=flat_lst, layout=layout)
+        self.transform_point_cloud = go.Figure(data=flat_lst, layout=layout)
+
+    @main.tl.log_time
+    def structure_point_cloud_update(self):
+        # noinspection PyTypeChecker
+        layout = go.Layout(scene_aspectmode='data',
+                           paper_bgcolor=self.structure_point_cloud_dict.get('background-color'),
+                           showlegend=False)
+        flat_lst = []
+        for elem in self.structure_point_cloud_dict.get('hologram'):
+            flat_lst.append(elem)
+        for elem in self.structure_point_cloud_dict.get('faces'):
+            flat_lst.append(elem)
+        self.structure_point_cloud = go.Figure(data=flat_lst, layout=layout)
 
     @main.tl.log_time
     def update_structure_information(self):
