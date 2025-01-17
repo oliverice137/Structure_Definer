@@ -117,8 +117,6 @@ class FigureUpdater:
 
             if self.state_load != self.state_default:
 
-                print('!')
-
                 if (self.state.get('transforms').get('lock-on') !=
                         self.state_load.get('transforms').get('lock-on')):
                     self.state.get('transforms').update(
