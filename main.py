@@ -99,7 +99,7 @@ def main():
                 children=[
                     dcc.Checklist(
                         [{'label': 'Transform Controls', 'value': 'show'}],
-                        ['show'],
+                        [],
                         className='checklist',
                         labelClassName='checklist_label',
                         id='toggle-transform-controls'
@@ -658,7 +658,7 @@ def main():
             Output('load-save-body', 'style'),
             Output('presets-body', 'style'),
 
-            Output('structure-information-faces', 'children'),
+            Output('loaded-figure', 'contents'),
 
             Output('transform-point-cloud', 'figure'),
             Output('transform-point-cloud', 'clickData'),
@@ -671,7 +671,11 @@ def main():
             Output('pitch-slider', 'value'),
             Output('roll-slider', 'value'),
             Output('cutoff-level-slider', 'value'),
-            Output('loaded-figure', 'contents'),
+
+            Output('structure-point-cloud', 'figure'),
+            Output('structure-point-cloud', 'clickData'),
+
+            Output('structure-information-faces', 'children'),
 
             Output('toggle-transform-point-cloud-display-settings', 'options', allow_duplicate=True),
             Output('toggle-mesh', 'options', allow_duplicate=True),
@@ -703,8 +707,6 @@ def main():
             Output('update-button', 'disabled', allow_duplicate=True),
             Output('undo-button', 'disabled', allow_duplicate=True),
             Output('redo-button', 'disabled', allow_duplicate=True),
-
-            Output('transform-point-cloud', 'clickData', allow_duplicate=True),
 
             State('transform-lock', 'on'),
             State('x-slider', 'value'),
@@ -764,7 +766,7 @@ def main():
                 toggle_load_save,
                 toggle_presets,
 
-                clickdata,
+                transform_clickdata,
 
                 polyhedralise_bus, face_add_bus, face_delete_bus,
                 save_bus,
@@ -815,9 +817,9 @@ def main():
             if True:
                 if transform_lock_on:
                     if sd.face_add:
-                        sd.add_face(clickdata)
+                        sd.add_face(transform_clickdata)
                     if face_delete_bus or sd.face_delete:
-                        sd.delete_face(clickdata)
+                        sd.delete_face(transform_clickdata)
                 else:
                     sd.face_add = False
                     sd.face_delete = False
@@ -1018,13 +1020,14 @@ def main():
                  segmentation_controls_style,
                  load_save_style,
                  presets_style,
-                 fs.structure_information,
-                 fs.transform_point_cloud, clickdata,
+                 figure_key,
+                 fs.transform_point_cloud, None,
                  fs.state.get('transforms').get('lock-on'),
                  x_scale, y_scale, z_scale, scale_multiplier,
                  theta, psi, phi,
                  cutoff_level,
-                 figure_key,
+                 fs.structure_point_cloud, None,
+                 fs.structure_information,
                  [{'label': 'Display Settings', 'value': 'show', 'disabled': False}],
                  [{'label': 'Mesh', 'value': 'show', 'disabled': False}],
                  [{'label': 'Display Settings', 'value': 'show', 'disabled': False}],
@@ -1042,8 +1045,7 @@ def main():
                  structure_controls_disabled, structure_controls_disabled, structure_controls_disabled,
                  load_disabled, save_disabled,
                  presets_disabled, presets_disabled, presets_disabled,
-                 update_disabled, undo_disabled, redo_disabled,
-                 None)
+                 update_disabled, undo_disabled, redo_disabled)
 
     # /////////////////////////////////////////////////////////////////////////////////////////////// secondary callback
     if True:
