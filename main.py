@@ -1009,8 +1009,51 @@ def main():
         if update_flip is not update_bus:
             update_flip = update_bus
 
-            if transform_lock_on:
-                figure_key = None
+            if structure_lock_on:
+
+                if not fs.state.get('structure').get('lock-on'):
+
+                    # region DISPLAY SETTINGS
+                    toggle_mesh = []
+                    mesh_style = {'display': 'none'}
+                    toggle_mesh_display_settings = []
+                    mesh_display_settings_style = {'display': 'none'}
+                    toggle_transform_controls = []
+                    transform_controls_style = {'display': 'none'}
+                    toggle_transform_point_cloud_display_settings = []
+                    transform_point_cloud_display_settings_style = {'display': 'none'}
+                    toggle_structure_controls = []
+                    structure_controls_style = {'display': 'none'}
+                    toggle_structure_information = []
+                    structure_information_style = {'display': 'none'}
+                    toggle_segmentation_controls = ['show']
+                    segmentation_controls_style = {'display': ''}
+                    toggle_presets = []
+                    presets_style = {'display': 'none'}
+                    # endregion
+
+            elif transform_lock_on:
+
+                if not fs.state.get('transforms').get('lock-on'):
+
+                    # region DISPLAY SETTINGS
+                    toggle_mesh = []
+                    mesh_style = {'display': 'none'}
+                    toggle_mesh_display_settings = []
+                    mesh_display_settings_style = {'display': 'none'}
+                    toggle_transform_controls = []
+                    transform_controls_style = {'display': 'none'}
+                    toggle_transform_point_cloud_display_settings = []
+                    transform_point_cloud_display_settings_style = {'display': 'none'}
+                    toggle_structure_controls = ['show']
+                    structure_controls_style = {'display': ''}
+                    toggle_structure_information = []
+                    structure_information_style = {'display': 'none'}
+                    toggle_segmentation_controls = []
+                    segmentation_controls_style = {'display': 'none'}
+                    toggle_presets = []
+                    presets_style = {'display': 'none'}
+                    # endregion
 
                 if sd.face_add:
                     sd.face_add = False
@@ -1023,50 +1066,75 @@ def main():
                 if sd.face_delete:
                     sd.face_delete = False
 
-            else:
-                if figure_key is not None:
-                    fs.load(figure_key)
-                    sd.shape = fs.form.shape
-                    figure_key = None
+            elif figure_key is not None:
+                fs.load(figure_key)
+                sd.shape = fs.form.shape
+                figure_key = None
 
-                    if fs.state_load.get('structure').get('lock-on'):
-                        ...
-                    elif fs.state_load.get('transforms').get('lock-on'):
-                        toggle_mesh = []
-                        mesh_style = {'display': 'none'}
-                        toggle_mesh_display_settings = []
-                        mesh_display_settings_style = {'display': 'none'}
-                        toggle_transform_controls = []
-                        transform_controls_style = {'display': 'none'}
-                        toggle_transform_point_cloud_display_settings = []
-                        transform_point_cloud_display_settings_style = {'display': 'none'}
-                        toggle_structure_controls = ['show']
-                        structure_controls_style = {'display': ''}
-                        toggle_structure_information = []
-                        structure_information_style = {'display': 'none'}
-                        toggle_segmentation_controls = []
-                        segmentation_controls_style = {'display': 'none'}
-                        toggle_presets = []
-                        presets_style = {'display': 'none'}
-                    else:
-                        toggle_mesh = []
-                        mesh_style = {'display': 'none'}
-                        toggle_mesh_display_settings = []
-                        mesh_display_settings_style = {'display': 'none'}
-                        toggle_transform_controls = ['show']
-                        transform_controls_style = {'display': ''}
-                        toggle_transform_point_cloud_display_settings = []
-                        transform_point_cloud_display_settings_style = {'display': 'none'}
-                        toggle_structure_controls = []
-                        structure_controls_style = {'display': 'none'}
-                        toggle_structure_information = []
-                        structure_information_style = {'display': 'none'}
-                        toggle_segmentation_controls = []
-                        segmentation_controls_style = {'display': 'none'}
-                        toggle_presets = []
-                        presets_style = {'display': 'none'}
+                if fs.state_load.get('structure').get('lock-on'):
 
-                    if fs.state_load.get('transforms').get('lock-on'):
+                    # region DISPLAY SETTINGS
+                    toggle_mesh = []
+                    mesh_style = {'display': 'none'}
+                    toggle_mesh_display_settings = []
+                    mesh_display_settings_style = {'display': 'none'}
+                    toggle_transform_controls = []
+                    transform_controls_style = {'display': 'none'}
+                    toggle_transform_point_cloud_display_settings = []
+                    transform_point_cloud_display_settings_style = {'display': 'none'}
+                    toggle_structure_controls = []
+                    structure_controls_style = {'display': 'none'}
+                    toggle_structure_information = []
+                    structure_information_style = {'display': 'none'}
+                    toggle_segmentation_controls = ['show']
+                    segmentation_controls_style = {'display': ''}
+                    toggle_presets = []
+                    presets_style = {'display': 'none'}
+                    # endregion
+
+                elif fs.state_load.get('transforms').get('lock-on'):
+
+                    # region DISPLAY SECTIONS
+                    toggle_mesh = []
+                    mesh_style = {'display': 'none'}
+                    toggle_mesh_display_settings = []
+                    mesh_display_settings_style = {'display': 'none'}
+                    toggle_transform_controls = []
+                    transform_controls_style = {'display': 'none'}
+                    toggle_transform_point_cloud_display_settings = []
+                    transform_point_cloud_display_settings_style = {'display': 'none'}
+                    toggle_structure_controls = ['show']
+                    structure_controls_style = {'display': ''}
+                    toggle_structure_information = []
+                    structure_information_style = {'display': 'none'}
+                    toggle_segmentation_controls = []
+                    segmentation_controls_style = {'display': 'none'}
+                    toggle_presets = []
+                    presets_style = {'display': 'none'}
+                    # endregion
+
+                else:
+
+                    # region DISPLAY SECTIONS
+                    toggle_mesh = []
+                    mesh_style = {'display': 'none'}
+                    toggle_mesh_display_settings = []
+                    mesh_display_settings_style = {'display': 'none'}
+                    toggle_transform_controls = ['show']
+                    transform_controls_style = {'display': ''}
+                    toggle_transform_point_cloud_display_settings = []
+                    transform_point_cloud_display_settings_style = {'display': 'none'}
+                    toggle_structure_controls = []
+                    structure_controls_style = {'display': 'none'}
+                    toggle_structure_information = []
+                    structure_information_style = {'display': 'none'}
+                    toggle_segmentation_controls = []
+                    segmentation_controls_style = {'display': 'none'}
+                    toggle_presets = []
+                    presets_style = {'display': 'none'}
+                    # endregion
+
+                if fs.state_load.get('transforms').get('lock-on'):
                         sd.faces = fs.state_load.get('structure').get('faces').copy()
                         sd.faces_simulated = fs.state_load.get('structure').get('faces').copy()
 

@@ -9,9 +9,9 @@ import pickle
 import copy
 from numba import jit
 from plotly import graph_objs as go
+from dash import html
 # from meshlib import mrmeshpy as mm
 # from meshlib import mrmeshnumpy as mn
-from dash import html
 
 
 class FigureUpdater:
@@ -111,7 +111,7 @@ class FigureUpdater:
                history_update=False
                ):
 
-        # ----------------------------------------------------------------------------------------------- loading update
+        # region LOADING UPDATE
         if self.figure_loaded:
             self.figure_loaded = False
 
@@ -163,8 +163,9 @@ class FigureUpdater:
             self.transform_point_cloud_update_faces(faces)
             self.transform_point_cloud_update_form()
             self.transform_point_cloud_update()
+        # endregion
 
-        # ---------------------------------------------------------------------------------------------- standard update
+        # region STANDARD UPDATE
         elif self.form is not None:
 
             self.state.get('transforms').update({'lock-on': transform_lock_on})
@@ -215,6 +216,7 @@ class FigureUpdater:
                     self.history_pos = -1
                 if self.state != self.history[-1]:
                     self.history.append(copy.deepcopy(self.state))
+        # endregion
 
     @main.tl.log_time
     def load(self, figure_key):
