@@ -1,7 +1,7 @@
 # ec0rypt by Oliver Rice
 
 
-# region flips
+# region FLIPS
 polyhedralise_flip = False
 face_add_flip = False
 face_delete_flip = False
@@ -16,7 +16,7 @@ redo_flip = False
 
 
 def main():
-    # region imports
+    # region IMPORTS
     from figure_updater import FigureUpdater
     from structure_definer import StructureDefiner
     from segmentation import Segmentation
@@ -795,6 +795,16 @@ def main():
         Output('undo-button', 'disabled', allow_duplicate=True),
         Output('redo-button', 'disabled', allow_duplicate=True),
 
+        Output('toggle-mesh', 'value'),
+        Output('toggle-mesh-display-settings', 'value'),
+        Output('toggle-transform-controls', 'value'),
+        Output('toggle-transform-point-cloud-display-settings', 'value'),
+        Output('toggle-structure-controls', 'value'),
+        Output('toggle-structure-information', 'value'),
+        Output('toggle-segmentation-controls', 'value'),
+        Output('toggle-load-save', 'value'),
+        Output('toggle-presets', 'value'),
+
         State('transform-lock', 'on'),
         State('x-slider', 'value'),
         State('y-slider', 'value'),
@@ -808,10 +818,10 @@ def main():
         State('segment-width', 'value'),
         State('loaded-figure', 'contents'),
 
-        Input('toggle-transform-point-cloud-display-settings', 'value'),
         Input('toggle-mesh', 'value'),
         Input('toggle-mesh-display-settings', 'value'),
         Input('toggle-transform-controls', 'value'),
+        Input('toggle-transform-point-cloud-display-settings', 'value'),
         Input('toggle-structure-controls', 'value'),
         Input('toggle-structure-information', 'value'),
         Input('toggle-segmentation-controls', 'value'),
@@ -849,10 +859,10 @@ def main():
 
             figure_key,
 
-            toggle_transform_point_cloud_display_settings,
             toggle_mesh,
             toggle_mesh_display_settings,
             toggle_transform_controls,
+            toggle_transform_point_cloud_display_settings,
             toggle_structure_controls, toggle_structure_information,
             toggle_segmentation_controls,
             toggle_load_save,
@@ -868,38 +878,46 @@ def main():
     ):
 
         # region DISPLAY TOGGLES
-        if toggle_transform_point_cloud_display_settings == ['show']:
-            transform_point_cloud_display_settings_style = {'display': ''}
-        else:
-            transform_point_cloud_display_settings_style = {'display': 'none'}
         if toggle_mesh == ['show']:
             mesh_style = {'display': ''}
         else:
             mesh_style = {'display': 'none'}
+
         if toggle_mesh_display_settings == ['show']:
             mesh_display_settings_style = {'display': ''}
         else:
             mesh_display_settings_style = {'display': 'none'}
+
         if toggle_transform_controls == ['show']:
             transform_controls_style = {'display': ''}
         else:
             transform_controls_style = {'display': 'none'}
+
+        if toggle_transform_point_cloud_display_settings == ['show']:
+            transform_point_cloud_display_settings_style = {'display': ''}
+        else:
+            transform_point_cloud_display_settings_style = {'display': 'none'}
+
         if toggle_structure_controls == ['show']:
             structure_controls_style = {'display': ''}
         else:
             structure_controls_style = {'display': 'none'}
+
         if toggle_structure_information == ['show']:
             structure_information_style = {'display': ''}
         else:
             structure_information_style = {'display': 'none'}
+
         if toggle_segmentation_controls == ['show']:
             segmentation_controls_style = {'display': ''}
         else:
             segmentation_controls_style = {'display': 'none'}
+
         if toggle_load_save == ['show']:
             load_save_style = {'display': ''}
         else:
             load_save_style = {'display': 'none'}
+
         if toggle_presets == ['show']:
             presets_style = {'display': ''}
         else:
@@ -1011,6 +1029,43 @@ def main():
                     sd.shape = fs.form.shape
                     figure_key = None
 
+                    if fs.state_load.get('structure').get('lock-on'):
+                        ...
+                    elif fs.state_load.get('transforms').get('lock-on'):
+                        toggle_mesh = []
+                        mesh_style = {'display': 'none'}
+                        toggle_mesh_display_settings = []
+                        mesh_display_settings_style = {'display': 'none'}
+                        toggle_transform_controls = []
+                        transform_controls_style = {'display': 'none'}
+                        toggle_transform_point_cloud_display_settings = []
+                        transform_point_cloud_display_settings_style = {'display': 'none'}
+                        toggle_structure_controls = ['show']
+                        structure_controls_style = {'display': ''}
+                        toggle_structure_information = []
+                        structure_information_style = {'display': 'none'}
+                        toggle_segmentation_controls = []
+                        segmentation_controls_style = {'display': 'none'}
+                        toggle_presets = []
+                        presets_style = {'display': 'none'}
+                    else:
+                        toggle_mesh = []
+                        mesh_style = {'display': 'none'}
+                        toggle_mesh_display_settings = []
+                        mesh_display_settings_style = {'display': 'none'}
+                        toggle_transform_controls = ['show']
+                        transform_controls_style = {'display': ''}
+                        toggle_transform_point_cloud_display_settings = []
+                        transform_point_cloud_display_settings_style = {'display': 'none'}
+                        toggle_structure_controls = []
+                        structure_controls_style = {'display': 'none'}
+                        toggle_structure_information = []
+                        structure_information_style = {'display': 'none'}
+                        toggle_segmentation_controls = []
+                        segmentation_controls_style = {'display': 'none'}
+                        toggle_presets = []
+                        presets_style = {'display': 'none'}
+
                     if fs.state_load.get('transforms').get('lock-on'):
                         sd.faces = fs.state_load.get('structure').get('faces').copy()
                         sd.faces_simulated = fs.state_load.get('structure').get('faces').copy()
@@ -1105,41 +1160,52 @@ def main():
         # endregion
 
         # region OUTPUTS
-        return \
-            (transform_point_cloud_display_settings_style,
-             mesh_style,
-             mesh_display_settings_style,
-             transform_controls_style,
-             structure_controls_style, structure_information_style,
-             segmentation_controls_style,
-             load_save_style,
-             presets_style,
-             figure_key,
-             fs.transform_point_cloud, None,
-             fs.state.get('transforms').get('lock-on'),
-             x_scale, y_scale, z_scale, scale_multiplier,
-             theta, psi, phi,
-             cutoff_level,
-             fs.structure_point_cloud, None,
-             fs.structure_information,
-             [{'label': 'Display Settings', 'value': 'show', 'disabled': False}],
-             [{'label': 'Mesh', 'value': 'show', 'disabled': False}],
-             [{'label': 'Display Settings', 'value': 'show', 'disabled': False}],
-             [{'label': 'Transform Controls', 'value': 'show', 'disabled': False}],
-             [{'label': 'Structure Controls', 'value': 'show', 'disabled': False}],
-             [{'label': 'Segmentation Controls', 'value': 'show', 'disabled': False}],
-             [{'label': 'Load/Save', 'value': 'show', 'disabled': False}],
-             [{'label': 'Presets', 'value': 'show', 'disabled': False}],
-             transform_lock_disabled,
-             transforms_controls_disabled, transforms_controls_disabled,
-             transforms_controls_disabled, transforms_controls_disabled,
-             transforms_controls_disabled, transforms_controls_disabled,
-             transforms_controls_disabled, transforms_controls_disabled,
-             structure_lock_disabled,
-             structure_controls_disabled, structure_controls_disabled, structure_controls_disabled,
-             load_disabled, save_disabled,
-             presets_disabled, presets_disabled, presets_disabled,
-             update_disabled, undo_disabled, redo_disabled)
+        return (
+            transform_point_cloud_display_settings_style,
+            mesh_style,
+            mesh_display_settings_style,
+            transform_controls_style,
+            structure_controls_style, structure_information_style,
+            segmentation_controls_style,
+            load_save_style,
+            presets_style,
+
+            figure_key,
+            fs.transform_point_cloud, None,
+            fs.state.get('transforms').get('lock-on'),
+            x_value, y_value, z_value, xyz_value,
+            theta, psi, phi,
+            cutoff_level,
+            fs.structure_point_cloud, None,
+            fs.structure_information,
+
+            [{'label': 'Display Settings', 'value': 'show', 'disabled': False}],
+            [{'label': 'Mesh', 'value': 'show', 'disabled': False}],
+            [{'label': 'Display Settings', 'value': 'show', 'disabled': False}],
+            [{'label': 'Transform Controls', 'value': 'show', 'disabled': False}],
+            [{'label': 'Structure Controls', 'value': 'show', 'disabled': False}],
+            [{'label': 'Segmentation Controls', 'value': 'show', 'disabled': False}],
+            [{'label': 'Load/Save', 'value': 'show', 'disabled': False}],
+            [{'label': 'Presets', 'value': 'show', 'disabled': False}],
+
+            transform_lock_disabled,
+            transforms_controls_disabled, transforms_controls_disabled,
+            transforms_controls_disabled, transforms_controls_disabled,
+            transforms_controls_disabled, transforms_controls_disabled,
+            transforms_controls_disabled, transforms_controls_disabled,
+            structure_lock_disabled,
+            structure_controls_disabled, structure_controls_disabled, structure_controls_disabled,
+            load_disabled, save_disabled,
+            presets_disabled, presets_disabled, presets_disabled,
+            update_disabled, undo_disabled, redo_disabled,
+
+            toggle_mesh, toggle_mesh_display_settings,
+            toggle_transform_controls, toggle_transform_point_cloud_display_settings,
+            toggle_structure_controls, toggle_structure_information,
+            toggle_segmentation_controls,
+            toggle_load_save,
+            toggle_presets
+        )
         # endregion
 
     # endregion
