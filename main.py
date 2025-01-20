@@ -32,6 +32,23 @@ def main():
     transform_point_cloud = fs.transform_point_cloud
     structure_point_cloud = fs.structure_point_cloud
 
+    # region MARKS
+    cartesian_scale_marks = {i / 20 - 1: "⋅" for i in range(41)}
+    cartesian_scale_marks.update({i / 4 - 1: "╹" for i in range(9)})
+    cartesian_scale_marks.pop(-1.0)
+    cartesian_scale_marks.pop(0.0)
+    cartesian_scale_marks.pop(1.0)
+    cartesian_scale_marks.update({-1: '|', -0.5: '|', 0: '|', 0.5: '|', 1: '|'})
+
+    euler_rotation_marks = {i * 5 - 180: "⋅" for i in range(73)}
+    euler_rotation_marks.update({i * 30 - 180: "╹" for i in range(13)})
+    euler_rotation_marks.update({-180: '|', -90: '|', 0: '|', 90: '|', 180: '|'})
+
+    cutoff_level_marks = {i: '⋅' for i in range(101)}
+    cutoff_level_marks.update({i * 5: "╹" for i in range(21)})
+    cutoff_level_marks.update({0: '|', 25: '|', 50: '|', 75: '|', 100: '|'})
+    # endregion
+
     app = Dash(__name__)
 
     app.layout = html.Div(
@@ -187,7 +204,8 @@ def main():
                                         step=0.05,
                                         value=0,
                                         included=False,
-                                        marks={i / 20 - 1: "|" for i in range(41)},
+                                        marks=cartesian_scale_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='x-slider'
                                     ),
                                 ],
@@ -205,7 +223,8 @@ def main():
                                         step=0.05,
                                         value=0,
                                         included=False,
-                                        marks={i / 20 - 1: "|" for i in range(41)},
+                                        marks=cartesian_scale_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='y-slider'
                                     ),
                                 ],
@@ -223,7 +242,8 @@ def main():
                                         step=0.05,
                                         value=0,
                                         included=False,
-                                        marks={i / 20 - 1: "|" for i in range(41)},
+                                        marks=cartesian_scale_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='z-slider'
                                     ),
                                 ],
@@ -241,7 +261,8 @@ def main():
                                         step=0.05,
                                         value=0,
                                         included=False,
-                                        marks={i / 20 - 1: "|" for i in range(41)},
+                                        marks=cartesian_scale_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='xyz-slider'
                                     ),
                                 ],
@@ -255,7 +276,7 @@ def main():
                     html.Div(className='h12 gray_1'),
                     # endregion
 
-                    # region ROTATION SLIDERS
+                    # region EULER ROTATION SLIDERS
                     html.Div(
                         children=[
 
@@ -269,7 +290,8 @@ def main():
                                         step=5,
                                         value=0,
                                         included=False,
-                                        marks={i * 5 - 180: "|" for i in range(73)},
+                                        marks=euler_rotation_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='yaw-slider'
                                     )
                                 ],
@@ -287,7 +309,8 @@ def main():
                                         step=5,
                                         value=0,
                                         included=False,
-                                        marks={i * 5 - 180: "|" for i in range(73)},
+                                        marks=euler_rotation_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='pitch-slider'
                                     )
                                 ],
@@ -305,7 +328,8 @@ def main():
                                         step=5,
                                         value=0,
                                         included=False,
-                                        marks={i * 5 - 180: "|" for i in range(73)},
+                                        marks=euler_rotation_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='roll-slider'
                                     )
                                 ],
@@ -322,20 +346,24 @@ def main():
                     # region CUTOFF LEVEL SLIDER
                     html.Div(
                         children=[
+                            html.Span(style={'width': 'calc(100vw / 4)'}),
                             html.Div(
                                 children=[
                                     html.P(children='Cutoff Level', className='text_center f24'),
                                     dcc.Slider(
                                         min=0,
                                         max=100,
-                                        step=5,
+                                        step=1,
                                         value=0,
                                         included=True,
+                                        marks=cutoff_level_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='cutoff-level-slider'
                                     )
                                 ],
                                 className='flex_1'
-                            )
+                            ),
+                            html.Span(style={'width': 'calc(100vw / 4)'})
                         ],
                         className='flex_row p12 center',
                     ),
@@ -503,6 +531,7 @@ def main():
                                         value=8,
                                         included=False,
                                         marks={i + 1: "|" for i in range(64)},
+                                        tooltip={'placement': 'top', 'always_visible': False},
                                         id='segment-width'
                                     ),
                                 ],
@@ -829,6 +858,7 @@ def main():
         Input('toggle-presets', 'value'),
 
         Input('transform-point-cloud', 'clickData'),
+        Input('structure-point-cloud', 'clickData'),
 
         Input('polyhedralise-bus', 'children'),
         Input('face-add-bus', 'children'),
@@ -868,7 +898,7 @@ def main():
             toggle_load_save,
             toggle_presets,
 
-            transform_clickdata,
+            transform_clickdata, structure_clickdata,
 
             polyhedralise_bus, face_add_bus, face_delete_bus,
             save_bus,
@@ -928,7 +958,7 @@ def main():
         if transform_lock_on:
             if sd.face_add:
                 sd.add_face(transform_clickdata)
-            if face_delete_bus or sd.face_delete:
+            if sd.face_delete:
                 sd.delete_face(transform_clickdata)
         else:
             sd.face_add = False
@@ -1009,71 +1039,14 @@ def main():
         if update_flip is not update_bus:
             update_flip = update_bus
 
-            if structure_lock_on:
-
-                if not fs.state.get('structure').get('lock-on'):
-
-                    # region DISPLAY SETTINGS
-                    toggle_mesh = []
-                    mesh_style = {'display': 'none'}
-                    toggle_mesh_display_settings = []
-                    mesh_display_settings_style = {'display': 'none'}
-                    toggle_transform_controls = []
-                    transform_controls_style = {'display': 'none'}
-                    toggle_transform_point_cloud_display_settings = []
-                    transform_point_cloud_display_settings_style = {'display': 'none'}
-                    toggle_structure_controls = []
-                    structure_controls_style = {'display': 'none'}
-                    toggle_structure_information = []
-                    structure_information_style = {'display': 'none'}
-                    toggle_segmentation_controls = ['show']
-                    segmentation_controls_style = {'display': ''}
-                    toggle_presets = []
-                    presets_style = {'display': 'none'}
-                    # endregion
-
-            elif transform_lock_on:
-
-                if not fs.state.get('transforms').get('lock-on'):
-
-                    # region DISPLAY SETTINGS
-                    toggle_mesh = []
-                    mesh_style = {'display': 'none'}
-                    toggle_mesh_display_settings = []
-                    mesh_display_settings_style = {'display': 'none'}
-                    toggle_transform_controls = []
-                    transform_controls_style = {'display': 'none'}
-                    toggle_transform_point_cloud_display_settings = []
-                    transform_point_cloud_display_settings_style = {'display': 'none'}
-                    toggle_structure_controls = ['show']
-                    structure_controls_style = {'display': ''}
-                    toggle_structure_information = []
-                    structure_information_style = {'display': 'none'}
-                    toggle_segmentation_controls = []
-                    segmentation_controls_style = {'display': 'none'}
-                    toggle_presets = []
-                    presets_style = {'display': 'none'}
-                    # endregion
-
-                if sd.face_add:
-                    sd.face_add = False
-                    sd.face_new = True
-
-                    for key in [*sd.faces.keys()]:
-                        if not sd.faces.get(key).get('initialised_plane'):
-                            sd.faces.pop(key)
-
-                if sd.face_delete:
-                    sd.face_delete = False
-
-            elif figure_key is not None:
+            if figure_key is not None:
                 fs.load(figure_key)
-                sd.shape = fs.form.shape
                 figure_key = None
+                sd.shape = fs.form.shape
 
                 if fs.state_load.get('structure').get('lock-on'):
 
-                    # region DISPLAY SETTINGS
+                    # region SET DISPLAY STATE
                     toggle_mesh = []
                     mesh_style = {'display': 'none'}
                     toggle_mesh_display_settings = []
@@ -1094,7 +1067,7 @@ def main():
 
                 elif fs.state_load.get('transforms').get('lock-on'):
 
-                    # region DISPLAY SECTIONS
+                    # region SET DISPLAY STATE
                     toggle_mesh = []
                     mesh_style = {'display': 'none'}
                     toggle_mesh_display_settings = []
@@ -1115,7 +1088,7 @@ def main():
 
                 else:
 
-                    # region DISPLAY SECTIONS
+                    # region SET DISPLAY STATE
                     toggle_mesh = []
                     mesh_style = {'display': 'none'}
                     toggle_mesh_display_settings = []
@@ -1138,6 +1111,63 @@ def main():
                         sd.faces = fs.state_load.get('structure').get('faces').copy()
                         sd.faces_simulated = fs.state_load.get('structure').get('faces').copy()
 
+            else:
+
+                if structure_lock_on:
+
+                    if not fs.state.get('structure').get('lock-on'):
+                        # region SET DISPLAY STATE
+                        toggle_mesh = []
+                        mesh_style = {'display': 'none'}
+                        toggle_mesh_display_settings = []
+                        mesh_display_settings_style = {'display': 'none'}
+                        toggle_transform_controls = []
+                        transform_controls_style = {'display': 'none'}
+                        toggle_transform_point_cloud_display_settings = []
+                        transform_point_cloud_display_settings_style = {'display': 'none'}
+                        toggle_structure_controls = []
+                        structure_controls_style = {'display': 'none'}
+                        toggle_structure_information = []
+                        structure_information_style = {'display': 'none'}
+                        toggle_segmentation_controls = ['show']
+                        segmentation_controls_style = {'display': ''}
+                        toggle_presets = []
+                        presets_style = {'display': 'none'}
+                        # endregion
+
+                elif transform_lock_on:
+
+                    if not fs.state.get('transforms').get('lock-on'):
+                        # region SET DISPLAY STATE
+                        toggle_mesh = []
+                        mesh_style = {'display': 'none'}
+                        toggle_mesh_display_settings = []
+                        mesh_display_settings_style = {'display': 'none'}
+                        toggle_transform_controls = []
+                        transform_controls_style = {'display': 'none'}
+                        toggle_transform_point_cloud_display_settings = []
+                        transform_point_cloud_display_settings_style = {'display': 'none'}
+                        toggle_structure_controls = ['show']
+                        structure_controls_style = {'display': ''}
+                        toggle_structure_information = []
+                        structure_information_style = {'display': 'none'}
+                        toggle_segmentation_controls = []
+                        segmentation_controls_style = {'display': 'none'}
+                        toggle_presets = []
+                        presets_style = {'display': 'none'}
+                        # endregion
+
+                    if sd.face_add:
+                        sd.face_add = False
+                        sd.face_new = True
+
+                        for key in [*sd.faces.keys()]:
+                            if not sd.faces.get(key).get('initialised_plane'):
+                                sd.faces.pop(key)
+
+                    if sd.face_delete:
+                        sd.face_delete = False
+
             fs.update(
                 transform_lock_on,
                 x_value, y_value, z_value, xyz_value,
@@ -1150,27 +1180,18 @@ def main():
             sd.face_add = False
             if fs.form is not None and fs.state.get('transforms').get('lock-on'):
                 sd.shape = fs.form.shape
+
         # endregion
 
         # region SET UI STATE
-        if fs.state is not None:
-            x_scale = fs.state.get('transforms').get('x-scale')
-            y_scale = fs.state.get('transforms').get('y-scale')
-            z_scale = fs.state.get('transforms').get('z-scale')
-            scale_multiplier = fs.state.get('transforms').get('xyz-scale')
-            theta = fs.state.get('transforms').get('theta')
-            psi = fs.state.get('transforms').get('psi')
-            phi = fs.state.get('transforms').get('phi')
-            cutoff_level = fs.state.get('transforms').get('cutoff-level')
-        else:
-            x_scale = 0
-            y_scale = 0
-            z_scale = 0
-            scale_multiplier = 0
-            theta = 0
-            psi = 0
-            phi = 0
-            cutoff_level = 0
+        x_value = fs.history[fs.history_pos].get('transforms').get('x-scale')
+        y_value = fs.history[fs.history_pos].get('transforms').get('y-scale')
+        z_value = fs.history[fs.history_pos].get('transforms').get('z-scale')
+        xyz_value = fs.history[fs.history_pos].get('transforms').get('xyz-scale')
+        theta_value = fs.history[fs.history_pos].get('transforms').get('theta')
+        psi_value = fs.history[fs.history_pos].get('transforms').get('psi')
+        phi_value = fs.history[fs.history_pos].get('transforms').get('phi')
+        cutoff_level_value = fs.history[fs.history_pos].get('transforms').get('cutoff-level')
         # endregion
 
         # region INPUT DISABLING
@@ -1242,8 +1263,8 @@ def main():
             fs.transform_point_cloud, None,
             fs.state.get('transforms').get('lock-on'),
             x_value, y_value, z_value, xyz_value,
-            theta, psi, phi,
-            cutoff_level,
+            theta_value, psi_value, phi_value,
+            cutoff_level_value,
             fs.structure_point_cloud, None,
             fs.structure_information,
 
@@ -1471,7 +1492,9 @@ def main():
 
 if __name__ == '__main__':
     print('Running main...')
+
     main()
+
 else:
     from time_log import TimeLog
 
