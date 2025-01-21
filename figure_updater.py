@@ -9,6 +9,7 @@ import pickle
 import copy
 from numba import jit
 from plotly import graph_objs as go
+from colors import Colors
 from dash import html
 # from meshlib import mrmeshpy as mm
 # from meshlib import mrmeshnumpy as mn
@@ -37,7 +38,8 @@ class FigureUpdater:
         self.structure_point_cloud_dict = {
             'hologram': [],
             'hologram-array': None,
-            'hologram-markers': (0.5, 'rgb(40,40,40)'),
+            'hologram-layers': [],
+            'hologram-markers': (7, 'rgb(40,40,40)'),
             'faces': [],
             'face-markers': (2, 'full_spectrum'),
             'background-color': '#F7F7F7'
@@ -175,9 +177,12 @@ class FigureUpdater:
 
                 if self.update_structure_point_cloud:
                     self.update_structure_point_cloud = False
-                    self.structure_point_cloud_dict.update({'hologram-array': main.tf.structure_hologram(self.form)})
+                    self.structure_point_cloud_dict.update(
+                        {'hologram-array':
+                             main.tf.structure_hologram(self.form,
+                                                        self.transform_point_cloud_dict.get('hologram-array'),
+                                                        10000)})
                     self.structure_point_cloud_update_form()
-                    # main.tf.structure_hologram(self.form)
 
                 if self.faces_updated:
                     self.faces_updated = False
@@ -479,15 +484,70 @@ class FigureUpdater:
         if self.structure_point_cloud_dict.get('hologram-array') is None:
             x = y = z = []
         else:
-            x, y, z = self.structure_point_cloud_dict.get('hologram-array').nonzero()
-        # noinspection PyTypeChecker
-        self.structure_point_cloud_dict.update(
-            {'hologram':
-                 [go.Scatter3d(x=x, y=y, z=z,
-                               mode='markers',
-                               name='hologram',
-                               marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
-                                           color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]})
+            # print(self.structure_point_cloud_dict.get('hologram-array').shape)
+            z_layers = self.structure_point_cloud_dict.get('hologram-array').shape[2]
+            colors = Colors('hsv', 0, z_layers)
+            for i in range(z_layers):
+                layer = self.structure_point_cloud_dict.get('hologram-array')[:, :, i]
+                zeros = np.zeros_like(layer)
+                layer = np.stack([zeros, layer, zeros])
+                z, y, x = layer.nonzero()
+                z *= i
+                self.structure_point_cloud_dict.get('hologram').append(
+                    go.Scatter3d(x=x, y=y, z=z,
+                                 mode='markers',
+                                 name='hologram',
+                                 opacity=1,
+                                 marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
+                                             color=colors.get_rgb(i),
+                                             symbol='circle',
+                                             line=dict(color=colors.get_rgb((i - z_layers // 2) % z_layers),
+                                                       width=1
+                                                       )
+                                             )
+                                 )
+                )
+                    # self.structure_point_cloud_dict.update(
+                    #     {'hologram':
+                    #              [go.Scatter3d(x=x, y=y, z=z,
+                    #                            mode='markers',
+                    #                            name='hologram',
+                    #                            marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
+                    #                                        color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]})
+                    # self.structure_point_cloud_dict.get('hologram').append(
+                    #     [go.Scatter3d(x=x, y=y, z=z,
+                    #                   mode='markers',
+                    #                   name='hologram',
+                    #                   marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
+                    #                               color=f'rgb({i},{i},{i})'))]
+                    # )
+            # for i, layer in enumerate(self.structure_point_cloud_dict.get('hologram-array')[:, :]):
+            #     zeros = np.zeros_like(layer)
+            #     layer = np.stack([zeros, layer, zeros])
+            #     x, y, z = layer.nonzero()
+            #     z *= i
+            #     print(i)
+            #     print(x)
+            #     print(y)
+            #     print(z)
+            #     # z = np.ones(self.structure_point_cloud_dict.get('hologram-array').shape[0], dtype=np.int64) * i
+            #     self.structure_point_cloud_dict.get('hologram').append(
+            #         [go.Scatter3d(x=x, y=y, z=z,
+            #                       mode='markers',
+            #                       name='hologram',
+            #                       marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
+            #                                   color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]
+            #     )
+
+        #     x, y, z = self.structure_point_cloud_dict.get('hologram-array').nonzero()
+        # #noinspection PyTypeChecker
+        # self.structure_point_cloud_dict.update(
+        #     {'hologram':
+        #          [go.Scatter3d(x=x, y=y, z=z,
+        #                        mode='markers',
+        #                        name='hologram',
+        #                        marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
+        #                                    color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]})
 
     @main.tl.log_time
     def transform_point_cloud_update_faces(self, faces):

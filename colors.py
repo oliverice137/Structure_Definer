@@ -17,13 +17,27 @@ class Colors:
         var = self.map.to_rgba(val)[:3]
         rgb = tuple(map(lambda a: int(a * 255 + 0.5), var))
         oklab = self.rgb_to_oklab(rgb)
-        oklab = (0.70, oklab[1], oklab[2])
+        oklch = self.oklab_to_oklch(oklab)
+        oklch = (0.75, 0.1275, oklch[2])
+        oklab = self.oklch_to_oklab(oklch)
         srgb = self.oklab_to_srgb(oklab)
         string = 'rgb('
         for val in srgb:
             string += str(val) + ','
         string = string[:-1] + ')'
         return string
+
+    @staticmethod
+    def oklab_to_oklch(oklab):
+        c = m.sqrt(oklab[1] ** 2 + oklab[2] ** 2)
+        h = (((m.atan2(oklab[2], oklab[1]) * 180) / m.pi % 360) + 360) % 360
+        return oklab[0], c, h
+
+    @staticmethod
+    def oklch_to_oklab(oklch):
+        a = oklch[1] * m.cos(oklch[2] * m.pi / 180)
+        b = oklch[1] * m.sin(oklch[2] * m.pi / 180)
+        return oklch[0] , a, b
 
     def rgb_to_oklab(self, rgb):
         r = self.gamma_to_linear(rgb[0] / 255)

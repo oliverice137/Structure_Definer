@@ -279,17 +279,15 @@ class Transforms:
         return output_arr
 
     @staticmethod
-    def structure_hologram(arr):
+    def structure_hologram(arr, hologram, target):
         p = 1.6075
-        x = arr.shape[0]
-        y = arr.shape[1]
-        z = arr.shape[2]
-        surface_area = 4 * m.pi * (((x * y) ** p + (x * z) ** p + (y * z) ** p) / 3) ** (1 / p)
-        target = 100000
-        scaling = 2 ** -(m.log10(target / surface_area) / m.log10(4))
-        zeros_shape = (m.ceil(x / scaling), m.ceil(y / scaling), m.ceil(z / scaling))
+        count = np.count_nonzero(hologram)
+        # surface_area = 4 * m.pi * (((x * y) ** p + (x * z) ** p + (y * z) ** p) / 3) ** (1 / p)
+        # scaling = 1 / (2 ** -(m.log10(target / surface_area) / m.log10(4)))
+        scaling = m.sqrt(target / count)
+        zeros_shape = (m.ceil(arr.shape[0] * scaling), m.ceil(arr.shape[1] * scaling), m.ceil(arr.shape[2] * scaling))
         zeros = np.zeros(zeros_shape, dtype=np.bool_)
-        arr = Transforms._cartesian_transform(arr, zeros, (1 / scaling, 1 / scaling, 1 / scaling))
+        arr = Transforms._cartesian_transform(arr, zeros, (scaling, scaling, scaling))
         arr = np.pad(arr, pad_width=1)
         return Transforms._hollow(arr, 5)[1:-1, 1:-1, 1:-1]
 
