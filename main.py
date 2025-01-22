@@ -47,6 +47,11 @@ def main():
     cutoff_level_marks = {i: '⋅' for i in range(101)}
     cutoff_level_marks.update({i * 5: "╹" for i in range(21)})
     cutoff_level_marks.update({0: '|', 25: '|', 50: '|', 75: '|', 100: '|'})
+
+    n_points_marks = {(i + 1) * 250: '⋅' for i in range(81)}
+    n_points_marks.update({(i + 1) * 1000: "╹" for i in range(21)})
+    n_points_marks.update({(i + 1) * 2500: "|" for i in range(9)})
+    n_points_marks.update({250: "|"})
     # endregion
 
     app = Dash(__name__)
@@ -355,7 +360,7 @@ def main():
                                         max=100,
                                         step=1,
                                         value=0,
-                                        included=True,
+                                        included=False,
                                         marks=cutoff_level_marks,
                                         tooltip={'placement': 'top', 'always_visible': False},
                                         id='cutoff-level-slider'
@@ -458,6 +463,32 @@ def main():
                         ],
                         className='gray_1',
                         id='structure-information-body'
+                    ),
+                    # endregion
+
+                    # region NUMBER OF POINTS SLIDER
+                    html.Div(
+                        children=[
+                            html.Span(style={'width': 'calc(100vw / 4)'}),
+                            html.Div(
+                                children=[
+                                    html.P(children='Number of Points', className='text_center f24'),
+                                    dcc.Slider(
+                                        min=250,
+                                        max=20000,
+                                        step=250,
+                                        value=5000,
+                                        included=False,
+                                        marks=n_points_marks,
+                                        tooltip={'placement': 'top', 'always_visible': False},
+                                        id='structure-n-points-slider'
+                                    )
+                                ],
+                                className='flex_1'
+                            ),
+                            html.Span(style={'width': 'calc(100vw / 4)'})
+                        ],
+                        className='flex_row p12 center',
                     ),
                     # endregion
 
@@ -787,6 +818,7 @@ def main():
         Output('pitch-slider', 'value'),
         Output('roll-slider', 'value'),
         Output('cutoff-level-slider', 'value'),
+        Output('structure-n-points-slider', 'value'),
 
         Output('structure-point-cloud', 'figure'),
         Output('structure-point-cloud', 'clickData'),
@@ -844,6 +876,7 @@ def main():
         State('roll-slider', 'value'),
         State('cutoff-level-slider', 'value'),
         State('structure-lock', 'on'),
+        State('structure-n-points-slider', 'value'),
         State('segment-width', 'value'),
         State('loaded-figure', 'contents'),
 
@@ -884,6 +917,7 @@ def main():
             cutoff_level_value,
 
             structure_lock_on,
+            structure_n_points_value,
 
             segment_width,
 
@@ -1020,16 +1054,108 @@ def main():
             fs.save()
         # endregion
 
-        # region HISTORY BUTTONS
+        # region UNDO BUTTON
         global undo_flip
         if undo_flip is not undo_bus:
             undo_flip = undo_bus
+
+            if fs.state.get('transforms').get('lock-on') and \
+                    not fs.history[fs.history_pos - 1].get('transforms').get('lock-on'):
+
+                # region SET DISPLAY STATE
+                toggle_mesh = []
+                mesh_style = {'display': 'none'}
+                toggle_mesh_display_settings = []
+                mesh_display_settings_style = {'display': 'none'}
+                toggle_transform_controls = ['show']
+                transform_controls_style = {'display': ''}
+                toggle_transform_point_cloud_display_settings = []
+                transform_point_cloud_display_settings_style = {'display': 'none'}
+                toggle_structure_controls = []
+                structure_controls_style = {'display': 'none'}
+                toggle_structure_information = []
+                structure_information_style = {'display': 'none'}
+                toggle_segmentation_controls = []
+                segmentation_controls_style = {'display': 'none'}
+                toggle_presets = []
+                presets_style = {'display': 'none'}
+                # endregion
+
+            elif not fs.state.get('transforms').get('lock-on') and \
+                    fs.history[fs.history_pos - 1].get('transforms').get('lock-on'):
+
+                # region SET DISPLAY STATE
+                toggle_mesh = []
+                mesh_style = {'display': 'none'}
+                toggle_mesh_display_settings = []
+                mesh_display_settings_style = {'display': 'none'}
+                toggle_transform_controls = []
+                transform_controls_style = {'display': 'none'}
+                toggle_transform_point_cloud_display_settings = []
+                transform_point_cloud_display_settings_style = {'display': 'none'}
+                toggle_structure_controls = ['show']
+                structure_controls_style = {'display': ''}
+                toggle_structure_information = []
+                structure_information_style = {'display': 'none'}
+                toggle_segmentation_controls = []
+                segmentation_controls_style = {'display': 'none'}
+                toggle_presets = []
+                presets_style = {'display': 'none'}
+                # endregion
+
             fs.undo()
             sd.faces = fs.state.get('structure').get('faces').copy()
+        # endregion
 
+        # region REDO BUTTON
         global redo_flip
         if redo_flip is not redo_bus:
             redo_flip = redo_bus
+
+            if fs.state.get('transforms').get('lock-on') and \
+                    not fs.history[fs.history_pos + 1].get('transforms').get('lock-on'):
+
+                # region SET DISPLAY STATE
+                toggle_mesh = []
+                mesh_style = {'display': 'none'}
+                toggle_mesh_display_settings = []
+                mesh_display_settings_style = {'display': 'none'}
+                toggle_transform_controls = ['show']
+                transform_controls_style = {'display': ''}
+                toggle_transform_point_cloud_display_settings = []
+                transform_point_cloud_display_settings_style = {'display': 'none'}
+                toggle_structure_controls = []
+                structure_controls_style = {'display': 'none'}
+                toggle_structure_information = []
+                structure_information_style = {'display': 'none'}
+                toggle_segmentation_controls = []
+                segmentation_controls_style = {'display': 'none'}
+                toggle_presets = []
+                presets_style = {'display': 'none'}
+                # endregion
+
+            elif not fs.state.get('transforms').get('lock-on') and \
+                    fs.history[fs.history_pos + 1].get('transforms').get('lock-on'):
+
+                # region SET DISPLAY STATE
+                toggle_mesh = []
+                mesh_style = {'display': 'none'}
+                toggle_mesh_display_settings = []
+                mesh_display_settings_style = {'display': 'none'}
+                toggle_transform_controls = []
+                transform_controls_style = {'display': 'none'}
+                toggle_transform_point_cloud_display_settings = []
+                transform_point_cloud_display_settings_style = {'display': 'none'}
+                toggle_structure_controls = ['show']
+                structure_controls_style = {'display': ''}
+                toggle_structure_information = []
+                structure_information_style = {'display': 'none'}
+                toggle_segmentation_controls = []
+                segmentation_controls_style = {'display': 'none'}
+                toggle_presets = []
+                presets_style = {'display': 'none'}
+                # endregion
+
             fs.redo()
             sd.faces = fs.state.get('structure').get('faces').copy()
         # endregion
@@ -1039,6 +1165,7 @@ def main():
         if update_flip is not update_bus:
             update_flip = update_bus
 
+            # region LOADING UPDATE
             if figure_key is not None:
                 fs.load(figure_key)
                 figure_key = None
@@ -1110,12 +1237,15 @@ def main():
                 if fs.state_load.get('transforms').get('lock-on'):
                         sd.faces = fs.state_load.get('structure').get('faces').copy()
                         sd.faces_simulated = fs.state_load.get('structure').get('faces').copy()
+            # endregion
 
+            # region STANDARD UPDATE
             else:
 
                 if structure_lock_on:
 
                     if not fs.state.get('structure').get('lock-on'):
+
                         # region SET DISPLAY STATE
                         toggle_mesh = []
                         mesh_style = {'display': 'none'}
@@ -1138,6 +1268,7 @@ def main():
                 elif transform_lock_on:
 
                     if not fs.state.get('transforms').get('lock-on'):
+
                         # region SET DISPLAY STATE
                         toggle_mesh = []
                         mesh_style = {'display': 'none'}
@@ -1168,12 +1299,38 @@ def main():
                     if sd.face_delete:
                         sd.face_delete = False
 
+                else:
+
+                    if fs.state.get('transforms').get('lock-on'):
+
+                        # region SET DISPLAY STATE
+                        toggle_mesh = []
+                        mesh_style = {'display': 'none'}
+                        toggle_mesh_display_settings = []
+                        mesh_display_settings_style = {'display': 'none'}
+                        toggle_transform_controls = ['show']
+                        transform_controls_style = {'display': ''}
+                        toggle_transform_point_cloud_display_settings = []
+                        transform_point_cloud_display_settings_style = {'display': 'none'}
+                        toggle_structure_controls = []
+                        structure_controls_style = {'display': 'none'}
+                        toggle_structure_information = []
+                        structure_information_style = {'display': 'none'}
+                        toggle_segmentation_controls = []
+                        segmentation_controls_style = {'display': 'none'}
+                        toggle_presets = []
+                        presets_style = {'display': 'none'}
+                        # endregion
+
+            # endregion
+
             fs.update(
                 transform_lock_on,
                 x_value, y_value, z_value, xyz_value,
                 theta_value, psi_value, phi_value,
                 cutoff_level_value,
                 structure_lock_on,
+                structure_n_points_value,
                 sd.faces,
             )
 
@@ -1184,14 +1341,15 @@ def main():
         # endregion
 
         # region SET UI STATE
-        x_value = fs.history[fs.history_pos].get('transforms').get('x-scale')
-        y_value = fs.history[fs.history_pos].get('transforms').get('y-scale')
-        z_value = fs.history[fs.history_pos].get('transforms').get('z-scale')
-        xyz_value = fs.history[fs.history_pos].get('transforms').get('xyz-scale')
-        theta_value = fs.history[fs.history_pos].get('transforms').get('theta')
-        psi_value = fs.history[fs.history_pos].get('transforms').get('psi')
-        phi_value = fs.history[fs.history_pos].get('transforms').get('phi')
-        cutoff_level_value = fs.history[fs.history_pos].get('transforms').get('cutoff-level')
+        x_value = fs.state.get('transforms').get('x-scale')
+        y_value = fs.state.get('transforms').get('y-scale')
+        z_value = fs.state.get('transforms').get('z-scale')
+        xyz_value = fs.state.get('transforms').get('xyz-scale')
+        theta_value = fs.state.get('transforms').get('theta')
+        psi_value = fs.state.get('transforms').get('psi')
+        phi_value = fs.state.get('transforms').get('phi')
+        cutoff_level_value = fs.state.get('transforms').get('cutoff-level')
+        structure_n_points_value = fs.state.get('structure').get('n-points')
         # endregion
 
         # region INPUT DISABLING
@@ -1265,6 +1423,7 @@ def main():
             x_value, y_value, z_value, xyz_value,
             theta_value, psi_value, phi_value,
             cutoff_level_value,
+            structure_n_points_value,
             fs.structure_point_cloud, None,
             fs.structure_information,
 

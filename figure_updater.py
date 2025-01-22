@@ -63,6 +63,7 @@ class FigureUpdater:
             },
             'structure': {
                 'lock-on': False,
+                'n-points': 5000,
                 'faces': {}
             }
         }
@@ -110,6 +111,7 @@ class FigureUpdater:
                theta, psi, phi,
                cutoff_level,
                structure_lock_on,
+               structure_n_points,
                faces,
                history_update=False
                ):
@@ -126,7 +128,9 @@ class FigureUpdater:
                         {'lock-on': self.state_load.get('transforms').get('lock-on')})
                     self.update_transform_point_cloud = True
 
+                self.state.get('structure').update({'n-points': self.state_load.get('structure').get('n-points')})
                 self.state.get('structure').update({'faces': self.state_load.get('structure').get('faces')})
+
                 self.update_structure_information()
                 self.update_manager(
                     category='transforms',
@@ -151,11 +155,14 @@ class FigureUpdater:
                 if self.update_transform_point_cloud:
                     self.update_transform_point_cloud = False
 
-                    if self.state.get('transforms').get('lock-on'):
-                        self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
+                    self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
 
-                    else:
-                        self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
+                    if self.state.get('transforms').get('lock-on'):
+                        self.structure_point_cloud_dict.update(
+                            {'hologram-array':
+                                 main.tf.structure_hologram(self.form,
+                                                            self.transform_point_cloud_dict.get('hologram-array'),
+                                                            self.state.get('structure').get('n-points'))})
 
                 self.history.append(copy.deepcopy(self.state))
 
@@ -173,7 +180,12 @@ class FigureUpdater:
 
             self.state.get('transforms').update({'lock-on': transform_lock_on})
 
+            if self.state.get('structure').get('n-points') != structure_n_points:
+                self.state.get('structure').update({'n-points': structure_n_points})
+                self.update_structure_point_cloud = True
+
             if transform_lock_on:
+
 
                 if self.update_structure_point_cloud:
                     self.update_structure_point_cloud = False
@@ -181,8 +193,9 @@ class FigureUpdater:
                         {'hologram-array':
                              main.tf.structure_hologram(self.form,
                                                         self.transform_point_cloud_dict.get('hologram-array'),
-                                                        10000)})
+                                                        structure_n_points)})
                     self.structure_point_cloud_update_form()
+
 
                 if self.faces_updated:
                     self.faces_updated = False
@@ -275,6 +288,7 @@ class FigureUpdater:
         cutoff_level = self.history[self.history_pos].get('transforms').get('cutoff-level')
 
         structure_lock_on = self.history[self.history_pos].get('structure').get('lock-on')
+        structure_n_points = self.history[self.history_pos].get('structure').get('n-points')
         faces = self.history[self.history_pos].get('structure').get('faces')
 
         if faces != self.history[self.history_pos + 1].get('structure').get('faces'):
@@ -291,6 +305,7 @@ class FigureUpdater:
             theta, psi, phi,
             cutoff_level,
             structure_lock_on,
+            structure_n_points,
             faces,
             history_update=True
         )
@@ -307,7 +322,9 @@ class FigureUpdater:
         psi = self.history[self.history_pos].get('transforms').get('psi')
         phi = self.history[self.history_pos].get('transforms').get('phi')
         cutoff_level = self.history[self.history_pos].get('transforms').get('cutoff-level')
+
         structure_lock_on = self.history[self.history_pos].get('structure').get('lock-on')
+        structure_n_points = self.history[self.history_pos].get('structure').get('n-points')
         faces = self.history[self.history_pos].get('structure').get('faces')
 
         if faces != self.history[self.history_pos - 1].get('structure').get('faces'):
@@ -321,6 +338,7 @@ class FigureUpdater:
             theta, psi, phi,
             cutoff_level,
             structure_lock_on,
+            structure_n_points,
             faces,
             history_update=True
         )
@@ -483,8 +501,15 @@ class FigureUpdater:
     def structure_point_cloud_update_form(self):
         if self.structure_point_cloud_dict.get('hologram-array') is None:
             x = y = z = []
+            self.structure_point_cloud_dict.update(
+                {'hologram':
+                     [go.Scatter3d(x=x, y=y, z=z,
+                                   mode='markers',
+                                   name='hologram',
+                                   marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
+                                               color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]})
         else:
-            # print(self.structure_point_cloud_dict.get('hologram-array').shape)
+            self.structure_point_cloud_dict.update({'hologram': []})
             z_layers = self.structure_point_cloud_dict.get('hologram-array').shape[2]
             colors = Colors('hsv', 0, z_layers)
             for i in range(z_layers):

@@ -281,15 +281,16 @@ class Transforms:
     @staticmethod
     def structure_hologram(arr, hologram, target):
         p = 1.6075
-        count = np.count_nonzero(hologram)
         # surface_area = 4 * m.pi * (((x * y) ** p + (x * z) ** p + (y * z) ** p) / 3) ** (1 / p)
         # scaling = 1 / (2 ** -(m.log10(target / surface_area) / m.log10(4)))
+        count = np.count_nonzero(hologram)
         scaling = m.sqrt(target / count)
         zeros_shape = (m.ceil(arr.shape[0] * scaling), m.ceil(arr.shape[1] * scaling), m.ceil(arr.shape[2] * scaling))
         zeros = np.zeros(zeros_shape, dtype=np.bool_)
         arr = Transforms._cartesian_transform(arr, zeros, (scaling, scaling, scaling))
         arr = np.pad(arr, pad_width=1)
-        return Transforms._hollow(arr, 5)[1:-1, 1:-1, 1:-1]
+        arr = Transforms._hollow(arr, 5)[1:-1, 1:-1, 1:-1]
+        return arr
 
     @staticmethod
     def _time_log_init():
