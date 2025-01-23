@@ -890,7 +890,6 @@ def main():
         Input('toggle-load-save', 'value'),
         Input('toggle-presets', 'value'),
 
-        Input('transform-point-cloud', 'clickData'),
         Input('structure-point-cloud', 'clickData'),
 
         Input('polyhedralise-bus', 'children'),
@@ -932,7 +931,7 @@ def main():
             toggle_load_save,
             toggle_presets,
 
-            transform_clickdata, structure_clickdata,
+            structure_clickdata,
 
             polyhedralise_bus, face_add_bus, face_delete_bus,
             save_bus,
@@ -991,9 +990,9 @@ def main():
         # region STRUCTURE UPDATES
         if transform_lock_on:
             if sd.face_add:
-                sd.add_face(transform_clickdata)
+                sd.add_face(structure_clickdata, fs.structure_point_cloud_dict.get('hologram-array').shape[2] - 1)
             if sd.face_delete:
-                sd.delete_face(transform_clickdata)
+                sd.delete_face(structure_clickdata)
         else:
             sd.face_add = False
             sd.face_delete = False
@@ -1003,12 +1002,16 @@ def main():
         # endregion
 
         # region STRUCTURE BUTTONS
+
+        # region POLYHEDRALISE BUTTON
         global polyhedralise_flip
         if polyhedralise_flip is not polyhedralise_bus:
             polyhedralise_flip = polyhedralise_bus
             # sd.polyhedralise(fs.transform_point_cloud_dict.get('hologram'))
             sd.form_sample(fs.transform_point_cloud_dict.get('hologram'))
+        # endregion
 
+        # region ADD FACE BUTTON
         global face_add_flip
         if face_add_flip is not face_add_bus:
             face_add_flip = face_add_bus
@@ -1016,7 +1019,9 @@ def main():
                 sd.face_add = True
         elif not transform_lock_on:
             sd.face_add = False
+        # endregion
 
+        # region DELETE FACE BUTTON
         global face_delete_flip
         if face_delete_flip is not face_delete_bus:
             face_delete_flip = face_delete_bus
@@ -1024,6 +1029,8 @@ def main():
                 sd.face_delete = True
         elif not transform_lock_on:
             sd.face_delete = False
+        # endregion
+
         # endregion
 
         # region SEGMENTATION BUTTONS

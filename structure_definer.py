@@ -24,7 +24,7 @@ class StructureDefiner:
         self.faces = {}
 
     @main.tl.log_time
-    def add_face(self, clickdata):
+    def add_face(self, clickdata, n_curves):
         if self.face_new:
             i = 0
             while self.faces.get(f'face_{i}') is not None:
@@ -35,7 +35,7 @@ class StructureDefiner:
             self.face_new = False
 
         if clickdata is not None:
-            if clickdata.get('points')[0].get('curveNumber') == 0:
+            if 0 <= clickdata.get('points')[0].get('curveNumber') <= n_curves:
                 x = clickdata.get('points')[0].get('x')
                 y = clickdata.get('points')[0].get('y')
                 z = clickdata.get('points')[0].get('z')

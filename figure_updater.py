@@ -38,7 +38,6 @@ class FigureUpdater:
         self.structure_point_cloud_dict = {
             'hologram': [],
             'hologram-array': None,
-            'hologram-layers': [],
             'hologram-markers': (7, 'rgb(40,40,40)'),
             'faces': [],
             'face-markers': (2, 'full_spectrum'),
@@ -164,15 +163,24 @@ class FigureUpdater:
                                                             self.transform_point_cloud_dict.get('hologram-array'),
                                                             self.state.get('structure').get('n-points'))})
 
+                if self.state.get('transforms').get('lock-on'):
+                    self.structure_point_cloud_dict.update(
+                        {'hologram-array':
+                             main.tf.structure_hologram(self.form,
+                                                        self.transform_point_cloud_dict.get('hologram-array'),
+                                                        self.state.get('structure').get('n-points'))})
+
                 self.history.append(copy.deepcopy(self.state))
 
             else:
 
                 self.transform_point_cloud_dict.update({'hologram-array': main.tf.hollow(self.form, 5)})
 
-            self.transform_point_cloud_update_faces(faces)
             self.transform_point_cloud_update_form()
             self.transform_point_cloud_update()
+            self.structure_point_cloud_update_form()
+            self.structure_point_cloud_update_faces(faces)
+            self.structure_point_cloud_update()
         # endregion
 
         # region STANDARD UPDATE
@@ -186,9 +194,7 @@ class FigureUpdater:
 
             if transform_lock_on:
 
-
                 if self.update_structure_point_cloud:
-                    self.update_structure_point_cloud = False
                     self.structure_point_cloud_dict.update(
                         {'hologram-array':
                              main.tf.structure_hologram(self.form,
@@ -196,14 +202,15 @@ class FigureUpdater:
                                                         structure_n_points)})
                     self.structure_point_cloud_update_form()
 
-
                 if self.faces_updated:
+                    self.update_structure_point_cloud = True
                     self.faces_updated = False
                     self.state.update({'structure': {'faces': faces}})
-                    self.transform_point_cloud_update_faces(faces)
-                    self.transform_point_cloud_update()
+                    self.structure_point_cloud_update_faces(faces)
 
-                self.structure_point_cloud_update()
+                if self.update_structure_point_cloud:
+                    self.update_structure_point_cloud = False
+                    self.structure_point_cloud_update()
 
             else:
 
@@ -258,8 +265,13 @@ class FigureUpdater:
             with open('figures/save_data/' + self.figure_key + '/structure.pkl', 'rb') as f:
                 self.state_load.update({'structure': pickle.load(f)})
 
-        self.history = [copy.deepcopy(self.state_default)]
+        if self.state_load.get('transforms').get('lock-on'):
+            self.history = [copy.deepcopy(self.state_default), copy.deepcopy(self.state_load)]
+            self.history[1].get('transforms').update({'lock-on': False})
+        else:
+            self.history = [copy.deepcopy(self.state_default)]
         self.history_pos = -1
+
         self.state = copy.deepcopy(self.state_default)
         self.figure_state_saves = self.figure_state_saves_default.copy()
         self.figure_state_saves.update({'000': self.form.copy()})
@@ -461,11 +473,14 @@ class FigureUpdater:
     @staticmethod
     @main.tl.log_time
     @jit(nopython=True)
-    def construct_plane_hologram(shape, plane, distance, restrictions=None):
+    def construct_plane_hologram(shape, plane, distance, frequency=1, restrictions=None):
+        plane = (plane[0], plane[1], plane[2], plane[3] * frequency)
         if distance:
+            distance = distance * frequency
             p = abs(plane[3]) / distance / 4
         else:
             p = 1
+        shape = (shape[0] * frequency, shape[1] * frequency, shape[2] * frequency)
         on_plane = np.zeros(shape, dtype=np.bool_)
         for x in range(shape[0]):
             v0 = x * plane[0]
@@ -516,67 +531,25 @@ class FigureUpdater:
                 layer = self.structure_point_cloud_dict.get('hologram-array')[:, :, i]
                 zeros = np.zeros_like(layer)
                 layer = np.stack([zeros, layer, zeros])
-                z, y, x = layer.nonzero()
+                z, x, y = layer.nonzero()
                 z *= i
                 self.structure_point_cloud_dict.get('hologram').append(
                     go.Scatter3d(x=x, y=y, z=z,
                                  mode='markers',
                                  name='hologram',
-                                 opacity=1,
+                                 opacity=0.25,
                                  marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
                                              color=colors.get_rgb(i),
-                                             symbol='circle',
                                              line=dict(color=colors.get_rgb((i - z_layers // 2) % z_layers),
                                                        width=1
                                                        )
                                              )
                                  )
                 )
-                    # self.structure_point_cloud_dict.update(
-                    #     {'hologram':
-                    #              [go.Scatter3d(x=x, y=y, z=z,
-                    #                            mode='markers',
-                    #                            name='hologram',
-                    #                            marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
-                    #                                        color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]})
-                    # self.structure_point_cloud_dict.get('hologram').append(
-                    #     [go.Scatter3d(x=x, y=y, z=z,
-                    #                   mode='markers',
-                    #                   name='hologram',
-                    #                   marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
-                    #                               color=f'rgb({i},{i},{i})'))]
-                    # )
-            # for i, layer in enumerate(self.structure_point_cloud_dict.get('hologram-array')[:, :]):
-            #     zeros = np.zeros_like(layer)
-            #     layer = np.stack([zeros, layer, zeros])
-            #     x, y, z = layer.nonzero()
-            #     z *= i
-            #     print(i)
-            #     print(x)
-            #     print(y)
-            #     print(z)
-            #     # z = np.ones(self.structure_point_cloud_dict.get('hologram-array').shape[0], dtype=np.int64) * i
-            #     self.structure_point_cloud_dict.get('hologram').append(
-            #         [go.Scatter3d(x=x, y=y, z=z,
-            #                       mode='markers',
-            #                       name='hologram',
-            #                       marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
-            #                                   color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]
-            #     )
-
-        #     x, y, z = self.structure_point_cloud_dict.get('hologram-array').nonzero()
-        # #noinspection PyTypeChecker
-        # self.structure_point_cloud_dict.update(
-        #     {'hologram':
-        #          [go.Scatter3d(x=x, y=y, z=z,
-        #                        mode='markers',
-        #                        name='hologram',
-        #                        marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
-        #                                    color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]})
 
     @main.tl.log_time
-    def transform_point_cloud_update_faces(self, faces):
-        self.transform_point_cloud_dict.update({'faces': []})
+    def structure_point_cloud_update_faces(self, faces):
+        self.structure_point_cloud_dict.update({'faces': []})
         planes = [value.get('plane_equation')
                   for value in faces.values() if value.get('initialised_plane')]
         for i, (key, value) in enumerate(faces.items()):
@@ -586,10 +559,17 @@ class FigureUpdater:
                 if not restrictions:
                     restrictions = None
                 x, y, z = self.construct_plane_hologram(
-                    self.form.shape, plane, value.get('distance'), restrictions).nonzero()
-                self.transform_point_cloud_dict.get('faces').append(
+                    self.structure_point_cloud_dict.get('hologram-array').shape,
+                    plane,
+                    value.get('distance'),
+                    10,
+                    restrictions).nonzero()
+                x = x.astype(np.float64) / 10
+                y = y.astype(np.float64) / 10
+                z = z.astype(np.float64) / 10
+                self.structure_point_cloud_dict.get('faces').append(
                     go.Scatter3d(x=x, y=y, z=z, mode='markers', name=key, marker=dict(
-                        size=self.transform_point_cloud_dict.get('face-markers')[0], color=value.get('color'))))
+                        size=self.structure_point_cloud_dict.get('face-markers')[0], color=value.get('color'))))
 
     @main.tl.log_time
     def transform_point_cloud_update(self):

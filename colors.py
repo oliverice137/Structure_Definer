@@ -14,8 +14,8 @@ class Colors:
         self.map = cm.ScalarMappable(norm=self.norm, cmap=self.cmap)
 
     def get_rgb(self, val):
-        var = self.map.to_rgba(val)[:3]
-        rgb = tuple(map(lambda a: int(a * 255 + 0.5), var))
+        rbg_map = self.map.to_rgba(val)[:3]
+        rgb = tuple(map(lambda a: int(a * 255 + 0.5), rbg_map))
         oklab = self.rgb_to_oklab(rgb)
         oklch = self.oklab_to_oklch(oklab)
         oklch = (0.75, 0.1275, oklch[2])
