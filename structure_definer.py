@@ -288,9 +288,8 @@ class StructureDefiner:
                            m.sqrt(vec_1[0] ** 2 + vec_1[1] ** 2 + vec_1[2] ** 2))) * 180 / m.pi
         return 0
 
-    @staticmethod
     @main.tl.log_time
-    def normals(hollow, search_radius):
+    def normals(self, hollow, search_radius):
         sphere = np.zeros((search_radius * 2 + 1, search_radius * 2 + 1, search_radius * 2 + 1), dtype=np.bool_)
         hollow_shape = hollow.shape
         hollow = np.pad(hollow, search_radius)
@@ -298,7 +297,11 @@ class StructureDefiner:
         normal_dict = {}
         neighbour_dict = {}
         for elem in normals:
-            normal_dict.update({elem[0]: StructureDefiner._p_fit(tuple(elem[1]))[:3]})
+            plane = StructureDefiner._p_fit(tuple(elem[1]))
+            base_point = (hollow.shape[0] / 2, hollow.shape[1] / 2, hollow.shape[2] / 2)
+            if not self._positive_polarity(plane, base_point):
+                plane = (-plane[0], -plane[1], -plane[2], -plane[3])
+            normal_dict.update({elem[0]: plane[:3]})
             neighbour_dict.update({elem[0]: elem[1]})
         return normal_dict
         # return normal_dict, neighbour_dict

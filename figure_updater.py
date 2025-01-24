@@ -11,6 +11,7 @@ from numba import jit
 from plotly import graph_objs as go
 from colors import Colors
 import cv2
+import open3d as o3d
 from dash import html
 # from meshlib import mrmeshpy as mm
 # from meshlib import mrmeshnumpy as mn
@@ -525,47 +526,87 @@ class FigureUpdater:
                                    marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
                                                color=self.structure_point_cloud_dict.get('hologram-markers')[1]))]})
         else:
-            point_normals = main.sd.normals(self.structure_point_cloud_dict.get('hologram-array'), 6)
-            lst = []
-            for i in range(256):
-                lower = i * 2 / 256 - 1
-                upper = i * 2 / 256 - 1 + 2 / 256
-                arr = np.zeros_like(self.structure_point_cloud_dict.get('hologram-array'))
-                for key, value in point_normals.items():
-                    rgb = ((value[0] + 1) / 2, (value[1] + 1) / 2, (value[2] + 1) / 2)
-                    maxi = max(rgb)
-                    mini = min(rgb)
-                    max_index = rgb.index(maxi)
-                    if not max_index:
-                        hue = (rgb[1] - rgb[2]) / (maxi - mini)
-                    elif max_index == 1:
-                        hue = 2 + (rgb[1] - rgb[0]) / (maxi - mini)
-                    else:
-                        hue = 4 + (rgb[0] - rgb[1]) / (maxi - mini)
-                    if hue < 0:
-                        hue += 6
-                    hue /= 6
-                    if lower <= hue < upper:
-                        arr[key[0], key[1], key[2]] = True
-                lst.append(arr)
-            self.structure_point_cloud_dict.update({'hologram': []})
-            colors = Colors('hsv', 0, len(lst))
-            for i in range(len(lst)):
-                layer = lst[i]
-                x, y, z = layer.nonzero()
-                self.structure_point_cloud_dict.get('hologram').append(
-                    go.Scatter3d(x=x, y=y, z=z,
-                                 mode='markers',
-                                 name='hologram',
-                                 opacity=1,
-                                 marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
-                                             color=colors.get_rgb(i),
-                                             # line=dict(color=colors.get_rgb((i - len(lst) // 2) % len(lst)),
-                                             #           width=1
-                                             #           )
-                                             )
-                                 )
+            # point_normals = main.sd.normals(self.structure_point_cloud_dict.get('hologram-array'), 3)
+            # x = np.linspace(-3, 3, 401)
+            # mesh_x, mesh_y = np.meshgrid(x, x)
+            # z = np.sinc((np.power(mesh_x, 2) + np.power(mesh_y, 2)))
+            # z_norm = (z - z.min()) / (z.max() - z.min())
+            # xyz = np.zeros((np.size(mesh_x), 3))
+            # xyz[:, 0] = np.reshape(mesh_x, -1)
+            # xyz[:, 1] = np.reshape(mesh_y, -1)
+            # xyz[:, 2] = np.reshape(z_norm, -1)
+            # pcd = o3d.geometry.PointCloud()
+            # pcd.points = o3d.utility.Vector3dVector(xyz)
+            # o3d.visualization.draw_geometries([pcd])
+
+            x, y, z = self.structure_point_cloud_dict.get('hologram-array').nonzero()
+            xyz = np.zeros((np.size(x), 3))
+            xyz[:, 0] = np.reshape(x, -1)
+            xyz[:, 1] = np.reshape(y, -1)
+            xyz[:, 2] = np.reshape(z, -1)
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(xyz)
+            o3d.geometry.PointCloud.estimate_normals(pcd)
+            # o3d.visualization.draw_plotly([pcd])
+
+            # print(np.asarray(pcd.points))
+
+            arr = np.asarray(pcd.points)
+            normals = np.asarray(pcd.normals)
+
+            x = arr[:, 0]
+            y = arr[:, 1]
+            z = arr[:, 2]
+
+            self.structure_point_cloud_dict.get('hologram').append(
+                go.Scatter3d(x=x, y=y, z=z,
+                             mode='markers',
+                             name='hologram',
+                             opacity=1,
+                             )
                 )
+
+            # lst = []
+
+            # for i in range(256):
+            #     lower = i * 2 / 256 - 1
+            #     upper = i * 2 / 256 - 1 + 2 / 256
+            #     arr = np.zeros_like(self.structure_point_cloud_dict.get('hologram-array'))
+            #     for key, value in point_normals.items():
+            #         rgb = ((value[0] + 1) / 2, (value[1] + 1) / 2, (value[2] + 1) / 2)
+            #         maxi = max(rgb)
+            #         mini = min(rgb)
+            #         max_index = rgb.index(maxi)
+            #         if not max_index:
+            #             hue = (rgb[1] - rgb[2]) / (maxi - mini)
+            #         elif max_index == 1:
+            #             hue = 2 + (rgb[1] - rgb[0]) / (maxi - mini)
+            #         else:
+            #             hue = 4 + (rgb[0] - rgb[1]) / (maxi - mini)
+            #         if hue < 0:
+            #             hue += 6
+            #         hue /= 6
+            #         if lower <= hue < upper:
+            #             arr[key[0], key[1], key[2]] = True
+            #     lst.append(arr)
+            # self.structure_point_cloud_dict.update({'hologram': []})
+            # colors = Colors('hsv', 0, len(lst))
+            # for i in range(len(lst)):
+            #     layer = lst[i]
+            #     x, y, z = layer.nonzero()
+            #     self.structure_point_cloud_dict.get('hologram').append(
+            #         go.Scatter3d(x=x, y=y, z=z,
+            #                      mode='markers',
+            #                      name='hologram',
+            #                      opacity=1,
+            #                      marker=dict(size=self.structure_point_cloud_dict.get('hologram-markers')[0],
+            #                                  color=colors.get_rgb(i),
+            #                                  # line=dict(color=colors.get_rgb((i - len(lst) // 2) % len(lst)),
+            #                                  #           width=1
+            #                                  #           )
+            #                                  )
+            #                      )
+            #     )
 
     @main.tl.log_time
     def structure_point_cloud_update_faces(self, faces):
