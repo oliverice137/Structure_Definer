@@ -547,7 +547,8 @@ class FigureUpdater:
             pcd = o3d.geometry.PointCloud()
             pcd.points = o3d.utility.Vector3dVector(xyz)
             o3d.geometry.PointCloud.estimate_normals(pcd)
-            # o3d.visualization.draw_plotly([pcd])
+            pcd.orient_normals_consistent_tangent_plane(100)
+            o3d.visualization.draw_plotly([pcd])
 
             # print(np.asarray(pcd.points))
 
