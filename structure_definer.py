@@ -300,7 +300,8 @@ class StructureDefiner:
         for elem in normals:
             normal_dict.update({elem[0]: StructureDefiner._p_fit(tuple(elem[1]))[:3]})
             neighbour_dict.update({elem[0]: elem[1]})
-        return normal_dict, neighbour_dict
+        return normal_dict
+        # return normal_dict, neighbour_dict
 
     @staticmethod
     @jit(nopython=True)

@@ -27,6 +27,22 @@ class Colors:
         string = string[:-1] + ')'
         return string
 
+    @staticmethod
+    def rgb_get_hue(rgb):
+        # rgb /= 255
+        rgb = (rgb[0] / 255, rgb[1] / 255, rgb[2] / 255)
+        maxi = max(rgb)
+        mini = min(rgb)
+        max_index = rgb.index(maxi)
+        if not max_index:
+            hue = (rgb[1] - rgb[2]) / (maxi - mini)
+        elif max_index == 1:
+            hue = 2 + (rgb[1] - rgb[0]) / (maxi - mini)
+        else:
+            hue = 4 + (rgb[0] - rgb[1]) / (maxi - mini)
+        return hue
+
+
     def rgb_to_oklab(self, rgb):
         r = self.gamma_to_linear(rgb[0] / 255)
         g = self.gamma_to_linear(rgb[1] / 255)

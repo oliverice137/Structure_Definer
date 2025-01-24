@@ -1669,3 +1669,7 @@ else:
     from transforms import Transforms
 
     tf = Transforms()
+
+    from structure_definer import StructureDefiner
+
+    sd = StructureDefiner()
