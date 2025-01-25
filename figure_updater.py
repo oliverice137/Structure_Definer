@@ -548,7 +548,7 @@ class FigureUpdater:
             pcd.points = o3d.utility.Vector3dVector(xyz)
             o3d.geometry.PointCloud.estimate_normals(pcd)
             pcd.orient_normals_consistent_tangent_plane(100)
-            o3d.visualization.draw_plotly([pcd])
+            # o3d.visualization.draw_plotly([pcd])
 
             # print(np.asarray(pcd.points))
 
@@ -559,13 +559,13 @@ class FigureUpdater:
             y = arr[:, 1]
             z = arr[:, 2]
 
-            self.structure_point_cloud_dict.get('hologram').append(
-                go.Scatter3d(x=x, y=y, z=z,
+            self.structure_point_cloud_dict.update({'hologram':
+                [go.Scatter3d(x=x, y=y, z=z,
                              mode='markers',
                              name='hologram',
                              opacity=1,
-                             )
-                )
+                             marker=dict(size=self.transform_point_cloud_dict.get('hologram-markers')[0],
+                                         color=self.transform_point_cloud_dict.get('hologram-markers')[1]))]})
 
             # lst = []
 
