@@ -2,9 +2,12 @@
 
 
 import math as m
+
+import numpy as np
 from matplotlib import cm
 from matplotlib import colors as col
 from matplotlib import pyplot as plt
+from numba import jit
 
 
 class Colors:
@@ -40,8 +43,10 @@ class Colors:
             hue = 2 + (rgb[1] - rgb[0]) / (maxi - mini)
         else:
             hue = 4 + (rgb[0] - rgb[1]) / (maxi - mini)
+        if hue < 0:
+            hue += 6
+        hue /= 6
         return hue
-
 
     def rgb_to_oklab(self, rgb):
         r = self.gamma_to_linear(rgb[0] / 255)
@@ -90,6 +95,66 @@ class Colors:
             return 1.055 * (n ** (1 / 2.4)) - 0.055
         else:
             return n * 12.92
+
+    @staticmethod
+    @jit(nopython=True)
+    def get_oklch_arr(arr, lightness, chroma):
+        for i in range(arr.shape[0]):
+            if arr[i, 0] >= 0.04045:
+                arr[i, 0] = ((arr[i, 0] + 0.055) / 1.055) ** 2.4
+            else:
+                arr[i, 0] = arr[i, 0] / 12.92
+            if arr[i, 1] >= 0.04045:
+                arr[i, 1] = ((arr[i, 1] + 0.055) / 1.055) ** 2.4
+            else:
+                arr[i, 1] = arr[i, 1] / 12.92
+            if arr[i, 2] >= 0.04045:
+                arr[i, 2] = ((arr[i, 2] + 0.055) / 1.055) ** 2.4
+            else:
+                arr[i, 2] = arr[i, 2] / 12.92
+
+            r = m.sqrt(m.sqrt(0.4122214708 * arr[i, 0] + 0.5363325363 * arr[i, 1] + 0.0514459929 * arr[i, 2]))
+            g = m.sqrt(m.sqrt(0.2119034982 * arr[i, 0] + 0.6806995451 * arr[i, 1] + 0.1073969566 * arr[i, 2]))
+            b = m.sqrt(m.sqrt(0.0883024619 * arr[i, 0] + 0.2817188376 * arr[i, 1] + 0.6299787005 * arr[i, 2]))
+            arr[i, 0] = r * 0.2104542553 + g * 0.7936177850 + b * -0.0040720468
+            arr[i, 1] = r * 1.9779984951 + g * -2.4285922050 + b * 0.4505937099
+            arr[i, 2] = r * 0.0259040371 + g * 0.7827717662 + b * -0.8086757660
+
+            # h = (((m.atan2(arr[i, 2], arr[i, 1]) * 180) / m.pi % 360) + 360) % 360
+            # arr[i, 0] = lightness
+            # arr[i, 1] = chroma
+            # arr[i, 2] = h
+            #
+            # a = arr[i, 1] * m.cos(arr[i, 2] * m.pi / 180)
+            # b = arr[i, 1] * m.sin(arr[i, 2] * m.pi / 180)
+            # arr[i, 1] = a
+            # arr[i, 2] = b
+
+            r = (arr[i, 0] + arr[i, 1] * 0.3963377774 + arr[i, 2]  * 0.2158037573) ** 3
+            g = (arr[i, 0] + arr[i, 1] * -0.1055613458 + arr[i, 2] * -0.0638541728) ** 3
+            b = (arr[i, 0] + arr[i, 1] * -0.0894841775 + arr[i, 2] * -1.2914855480) ** 3
+            arr[i, 0] = r * 4.0767416621 + g * -3.3077115913 + b * 0.2309699292
+            arr[i, 1] = r * -1.2684380046 + g * 2.6097574011 + b * -0.3413193965
+            arr[i, 2] = r * -0.0041960863 + g * -0.7034186147 + b * 1.7076147010
+
+            if arr[i, 0] >= 0.0031308:
+                arr[i, 0] = 1.055 * (arr[i, 0] ** (1 / 2.4)) - 0.055
+            else:
+                arr[i, 0] = arr[i, 0] * 12.92
+            if arr[i, 1] >= 0.0031308:
+                arr[i, 1] = 1.055 * (arr[i, 1] ** (1 / 2.4)) - 0.055
+            else:
+                arr[i, 1] = arr[i, 1] * 12.92
+            if arr[i, 2] >= 0.0031308:
+                arr[i, 2] = 1.055 * (arr[i, 2] ** (1 / 2.4)) - 0.055
+            else:
+                arr[i, 2] = arr[i, 2] * 12.92
+
+            arr[i, 0] = min(max(arr[i, 0], 0), 1)
+            arr[i, 1] = min(max(arr[i, 1], 0), 1)
+            arr[i, 2] = min(max(arr[i, 2], 0), 1)
+
+        return arr
 
 
 if __name__ == '__main__':
