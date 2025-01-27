@@ -43,7 +43,7 @@ class FigureUpdater:
         self.structure_point_cloud_dict = {
             'hologram': [],
             'hologram-array': None,
-            'hologram-markers': (6, 'rgb(40,40,40)'),
+            'hologram-markers': (3, 'rgb(40,40,40)'),
             'faces': [],
             'face-markers': (2, 'full_spectrum'),
             'background-color': '#F7F7F7'
@@ -542,15 +542,21 @@ class FigureUpdater:
             o3d.geometry.PointCloud.estimate_normals(pcd)
             pcd.orient_normals_consistent_tangent_plane(100)
             rgb = (0.5, 0.5, 0.5) + np.asarray(pcd.normals) * 0.5
-            colours = Colors(plt.get_cmap('cubehelix'), 0, 1)
+            B = Colors(plt.get_cmap('cubehelix'), 0, 1)
+            R = Colors(plt.get_cmap('terrain'), 0, 1)
+            G = Colors(plt.get_cmap('ocean'), 0, 1)
 
             for i in range(rgb.shape[0]):
-                r = colours.map.to_rgba(rgb[i][0])[:3]
-                g = colours.map.to_rgba(rgb[i][1])[:3]
-                b = colours.map.to_rgba(rgb[i][2])[:3]
+                r = R.map.to_rgba(rgb[i][0])[:3]
+                g = G.map.to_rgba(rgb[i][1])[:3]
+                b = B.map.to_rgba(rgb[i][2])[:3]
                 rgb[i] = (m.sqrt((m.sqrt((r[0] ** 2 + g[0] ** 2) / 2) ** 2 + b[0] ** 2) / 2),
                           m.sqrt((m.sqrt((r[1] ** 2 + g[1] ** 2) / 2) ** 2 + b[1] ** 2) / 2),
                           m.sqrt((m.sqrt((r[2] ** 2 + g[2] ** 2) / 2) ** 2 + b[2] ** 2) / 2))
+
+            rgb -= np.min(rgb)
+            rgb /= np.max(rgb) * 100
+            rgb *= 100
 
             arr = np.asarray(pcd.points)
             x = arr[:, 0]
