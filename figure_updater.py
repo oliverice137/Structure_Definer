@@ -43,7 +43,7 @@ class FigureUpdater:
         self.structure_point_cloud_dict = {
             'hologram': [],
             'hologram-array': None,
-            'hologram-markers': (3, 'rgb(40,40,40)'),
+            'hologram-markers': (4, 'rgb(40,40,40)'),
             'faces': [],
             'face-markers': (2, 'full_spectrum'),
             'background-color': '#F7F7F7'

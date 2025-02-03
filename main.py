@@ -1,4 +1,4 @@
-# ec0rypt by Oliver Rice
+# Structure Definer by Oliver Rice
 
 
 # region FLIPS
@@ -475,7 +475,7 @@ def main():
                                     html.P(children='Number of Points', className='text_center f24'),
                                     dcc.Slider(
                                         min=250,
-                                        max=20000,
+                                        max=40000,
                                         step=250,
                                         value=5000,
                                         included=False,
