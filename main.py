@@ -90,7 +90,6 @@ def main():
             html.Div(
                 children=[
 
-                    # ---------------------------------------------------------------- display settings collapse control
                     html.Div(
                         children=[
                             dcc.Checklist(
