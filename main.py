@@ -1,4 +1,4 @@
-# Structure Definer by Oliver Rice
+# 3D Editor by Oliver Rice
 
 
 # region FLIPS
@@ -61,7 +61,7 @@ def main():
 
             # region HEADER
             html.Div(
-                children=[html.H1(children='ec0rypt', className='header-title')],
+                children=[html.H1(children='3D Editor', className='header-title')],
                 className='header'
             ),
             html.Div(

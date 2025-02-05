@@ -699,4 +699,4 @@ class FigureUpdater:
 
 
 if __name__ == '__main__':
-    print('Running figure_state_updater...')
+    print('Running figure_updater...')
